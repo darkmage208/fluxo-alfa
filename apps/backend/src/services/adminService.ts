@@ -272,6 +272,7 @@ export class AdminService {
 
   async createSource(data: CreateSourceRequest): Promise<Source> {
     try {
+      logger.info("------------------1---------------")
       const source = await prisma.source.create({
         data: {
           title: data.title,
@@ -280,17 +281,25 @@ export class AdminService {
           isActive: true,
         },
       });
+      logger.info("------------------2---------------")
 
-      // Process the source for RAG in the background
+      // Process the source for RAG in the background with better error handling
       setImmediate(async () => {
         try {
+          logger.info(`Starting RAG processing for source: ${source.id}`);
           await this.ragService.processSource(source.id);
           logger.info(`Source processed for RAG: ${source.id}`);
         } catch (error) {
           logger.error(`Failed to process source ${source.id} for RAG:`, error);
+          // Don't let RAG processing errors crash the entire application
+          // Log the error and continue
+          if (error instanceof Error) {
+            logger.error(`RAG Error details: ${error.message}`);
+            logger.error(`RAG Error stack: ${error.stack}`);
+          }
         }
       });
-
+      
       logger.info(`Source created: ${source.id}`);
       return source;
     } catch (error) {

@@ -48,7 +48,7 @@ export const TOKEN_EXPIRY = {
 export const RATE_LIMITS = {
   AUTH: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // 5 attempts
+    max: 20, // 20 attempts (increased for development)
   },
   CHAT: {
     windowMs: 60 * 1000, // 1 minute

@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useChatStore } from '@/store/chat';
 import { useAuthStore } from '@/store/auth';
 import { formatDate } from '@/lib/utils';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 import { 
   MessageCircle, 
   Plus, 
@@ -238,7 +239,14 @@ const ChatPage = () => {
                           : 'bg-white'
                       }`}
                     >
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      {message.role === 'user' ? (
+                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      ) : (
+                        <MarkdownRenderer 
+                          content={message.content} 
+                          className={`text-sm ${message.role === 'user' ? 'prose-invert' : ''}`}
+                        />
+                      )}
                       <p className="text-xs mt-2 opacity-70">
                         {formatDate(message.createdAt)}
                       </p>
@@ -255,10 +263,10 @@ const ChatPage = () => {
                       <Bot className="w-4 h-4" />
                     </div>
                     <Card className="p-3 bg-white">
-                      <p className="text-sm whitespace-pre-wrap">
-                        {streamingMessage}
+                      <div className="text-sm">
+                        <MarkdownRenderer content={streamingMessage} className="text-sm" />
                         <span className="animate-pulse">|</span>
-                      </p>
+                      </div>
                     </Card>
                   </div>
                 </div>

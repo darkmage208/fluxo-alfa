@@ -63,6 +63,7 @@ export class RAGService {
 
   async processSource(sourceId: string): Promise<void> {
     try {
+      logger.info(`RAG: Finding source ${sourceId}`);
       const source = await prisma.source.findUnique({
         where: { id: sourceId },
       });
@@ -71,34 +72,60 @@ export class RAGService {
         throw new Error('Source not found');
       }
 
-      // Delete existing chunks
-      await prisma.sourceChunk.deleteMany({
-        where: { sourceId },
-      });
+      logger.info(`RAG: Found source "${source.title}", deleting existing chunks`);
+      // Delete existing chunks using raw SQL to avoid pgvector issues
+      await prisma.$executeRaw`
+        DELETE FROM source_chunks WHERE source_id = ${sourceId}::uuid
+      `;
 
-      // Chunk the text
-      const chunks = chunkText(
-        source.rawText,
-        DEFAULT_LIMITS.MAX_CHUNK_SIZE,
-        DEFAULT_LIMITS.CHUNK_OVERLAP
-      );
+      logger.info(`RAG: Chunking text of length ${source.rawText.length}`);
+      
+      // Use smaller chunk size to avoid memory issues
+      const SAFE_CHUNK_SIZE = 500;  // Smaller chunks to avoid memory problems
+      const SAFE_OVERLAP = 50;
+      
+      // Create a simple chunking function to avoid potential issues with the shared one
+      const createSimpleChunks = (text: string, chunkSize: number): string[] => {
+        const chunks: string[] = [];
+        for (let i = 0; i < text.length; i += chunkSize) {
+          const chunk = text.slice(i, i + chunkSize).trim();
+          if (chunk.length > 0) {
+            chunks.push(chunk);
+          }
+        }
+        return chunks;
+      };
+
+      const chunks = createSimpleChunks(source.rawText, SAFE_CHUNK_SIZE);
+
+      logger.info(`RAG: Generated ${chunks.length} chunks, starting embedding generation`);
 
       // Generate embeddings for each chunk
       for (let i = 0; i < chunks.length; i++) {
-        const chunk = chunks[i];
-        const embedding = await this.openaiService.generateEmbedding(chunk);
+        try {
+          logger.info(`RAG: Processing chunk ${i + 1}/${chunks.length}`);
+          const chunk = chunks[i];
+          
+          logger.info(`RAG: Generating embedding for chunk ${i + 1}`);
+          const embedding = await this.openaiService.generateEmbedding(chunk);
+          
+          if (!Array.isArray(embedding) || embedding.length !== 1536) {
+            throw new Error(`Invalid embedding format for chunk ${i}, expected array of 1536 numbers`);
+          }
 
-        await prisma.sourceChunk.create({
-          data: {
-            sourceId,
-            chunkIndex: i,
-            text: chunk,
-            embedding: JSON.stringify(embedding),
-          },
-        });
+          logger.info(`RAG: Inserting chunk ${i + 1} into database`);
+          // Use raw query for inserting vector data since Prisma doesn't handle pgvector well
+          await prisma.$executeRaw`
+            INSERT INTO source_chunks (id, source_id, chunk_index, text, embedding)
+            VALUES (gen_random_uuid(), ${sourceId}::uuid, ${i}, ${chunk}, ${JSON.stringify(embedding)}::vector)
+          `;
 
-        // Small delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 100));
+          // Small delay to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (chunkError) {
+          logger.error(`RAG: Error processing chunk ${i + 1}:`, chunkError);
+          throw chunkError;
+        }
       }
 
       logger.info(`Processed source: ${source.title} with ${chunks.length} chunks`);
