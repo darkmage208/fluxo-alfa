@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: fluxo-postgres-prod
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fluxoalfa}
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    networks:
+      - fluxo-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: fluxo-redis-prod
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - fluxo-network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./apps/backend/Dockerfile
+    container_name: fluxo-backend-prod
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgres://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-fluxoalfa}
+      - REDIS_URL=redis://redis:6379
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - fluxo-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  user-frontend:
+    build:
+      context: .
+      dockerfile: ./apps/user-frontend/Dockerfile
+    container_name: fluxo-user-frontend-prod
+    ports:
+      - "${USER_FRONTEND_PORT:-3000}:3000"
+    environment:
+      - VITE_API_URL=${BACKEND_URL:-http://localhost:8000}
+    depends_on:
+      - backend
+    networks:
+      - fluxo-network
+    restart: unless-stopped
+
+  admin-frontend:
+    build:
+      context: .
+      dockerfile: ./apps/admin-frontend/Dockerfile
+    container_name: fluxo-admin-frontend-prod
+    ports:
+      - "${ADMIN_FRONTEND_PORT:-3001}:3001"
+    environment:
+      - VITE_API_URL=${BACKEND_URL:-http://localhost:8000}
+    depends_on:
+      - backend
+    networks:
+      - fluxo-network
+    restart: unless-stopped
+
+networks:
+  fluxo-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

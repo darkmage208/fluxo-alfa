@@ -1,0 +1,41 @@
+{
+  "name": "fluxo-alfa",
+  "version": "1.0.0",
+  "description": "Production-ready AI+RAG SaaS Chat Application",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:user-frontend\" \"npm run dev:admin-frontend\"",
+    "dev:backend": "npm run dev --workspace=@fluxo/backend",
+    "dev:user-frontend": "npm run dev --workspace=@fluxo/user-frontend",
+    "dev:admin-frontend": "npm run dev --workspace=@fluxo/admin-frontend",
+    "build": "npm run build:shared && npm run build:backend && npm run build:user-frontend && npm run build:admin-frontend",
+    "build:shared": "npm run build --workspace=@fluxo/shared",
+    "build:backend": "npm run build --workspace=@fluxo/backend",
+    "build:user-frontend": "npm run build --workspace=@fluxo/user-frontend",
+    "build:admin-frontend": "npm run build --workspace=@fluxo/admin-frontend",
+    "test": "npm run test:backend",
+    "test:backend": "npm test --workspace=@fluxo/backend",
+    "lint": "npm run lint:backend && npm run lint:frontend",
+    "lint:backend": "npm run lint --workspace=@fluxo/backend",
+    "lint:frontend": "npm run lint --workspace=@fluxo/user-frontend && npm run lint --workspace=@fluxo/admin-frontend",
+    "db:migrate": "npm run db:migrate --workspace=@fluxo/backend",
+    "db:generate": "npm run db:generate --workspace=@fluxo/backend",
+    "db:seed": "npm run db:seed --workspace=@fluxo/backend",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:build": "docker-compose build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}
