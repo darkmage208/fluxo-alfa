@@ -53,34 +53,67 @@ export const slugify = (text: string): string => {
     .replace(/-+$/, '');
 };
 
-export const chunkText = (text: string, maxChunkSize: number = 1000, overlap: number = 100): string[] => {
+export const splitIntoSentences = (text: string): string[] => {
+  // Regex to split text into sentences
+  // Handles common sentence endings (.!?) and preserves the punctuation
+  // Also handles common abbreviations and edge cases
+  const sentenceRegex = /[^.!?]+(?:[.!?](?:["']|(?=\s))?)/g;
+  const matches = text.match(sentenceRegex) || [];
+  
+  // Clean and filter sentences
+  return matches
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+};
+
+export const chunkTextBySentences = (
+  text: string, 
+  maxChunkSize: number = 1000, 
+  overlapSentences: number = 2
+): string[] => {
+  const sentences = splitIntoSentences(text);
+  
+  if (sentences.length === 0) return [];
+  
   const chunks: string[] = [];
-  let startIndex = 0;
-
-  while (startIndex < text.length) {
-    const endIndex = Math.min(startIndex + maxChunkSize, text.length);
-    let chunk = text.slice(startIndex, endIndex);
-
-    // Try to end at a natural boundary (sentence, paragraph, etc.)
-    if (endIndex < text.length) {
-      const lastSentenceEnd = chunk.lastIndexOf('.');
-      const lastNewline = chunk.lastIndexOf('\n');
-      const lastSpace = chunk.lastIndexOf(' ');
-      
-      const boundary = Math.max(lastSentenceEnd, lastNewline, lastSpace);
-      if (boundary > maxChunkSize * 0.7) { // Only use boundary if it's not too far back
-        chunk = chunk.slice(0, boundary + 1);
-      }
-    }
-
-    chunks.push(chunk.trim());
+  let currentChunk: string[] = [];
+  let currentSize = 0;
+  let i = 0;
+  
+  while (i < sentences.length) {
+    const sentence = sentences[i];
+    const sentenceSize = sentence.length;
     
-    // Move start index, accounting for overlap
-    startIndex = startIndex + chunk.length - overlap;
-    if (startIndex >= text.length) break;
+    // If adding this sentence would exceed max size and we have at least one sentence
+    if (currentSize + sentenceSize > maxChunkSize && currentChunk.length > 0) {
+      // Save current chunk
+      chunks.push(currentChunk.join(' '));
+      
+      // Start new chunk with overlap
+      const overlapStart = Math.max(0, currentChunk.length - overlapSentences);
+      currentChunk = currentChunk.slice(overlapStart);
+      currentSize = currentChunk.join(' ').length;
+    }
+    
+    // Add sentence to current chunk
+    currentChunk.push(sentence);
+    currentSize += sentenceSize + 1; // +1 for space
+    i++;
   }
-
+  
+  // Add remaining sentences
+  if (currentChunk.length > 0) {
+    chunks.push(currentChunk.join(' '));
+  }
+  
   return chunks.filter(chunk => chunk.length > 0);
+};
+
+// Keep the old function for backward compatibility but use sentence-based internally
+export const chunkText = (text: string, maxChunkSize: number = 1000, overlap: number = 100): string[] => {
+  // Convert overlap from characters to approximate sentences (assuming ~100 chars per sentence)
+  const overlapSentences = Math.max(1, Math.floor(overlap / 100));
+  return chunkTextBySentences(text, maxChunkSize, overlapSentences);
 };
 
 export const calculateTokens = (text: string): number => {

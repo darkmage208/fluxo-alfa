@@ -1,7 +1,7 @@
 import { prisma } from '../config/database';
 import { OpenAIService } from './openaiService';
 import logger from '../config/logger';
-import { chunkText, DEFAULT_LIMITS } from '@fluxo/shared';
+import { chunkTextBySentences, DEFAULT_LIMITS } from '@fluxo/shared';
 
 export class RAGService {
   private openaiService: OpenAIService;
@@ -80,23 +80,12 @@ export class RAGService {
 
       logger.info(`RAG: Chunking text of length ${source.rawText.length}`);
       
-      // Use smaller chunk size to avoid memory issues
-      const SAFE_CHUNK_SIZE = 500;  // Smaller chunks to avoid memory problems
-      const SAFE_OVERLAP = 50;
+      // Use sentence-based chunking for better context preservation
+      const SAFE_CHUNK_SIZE = 800;  // Increased size since we're chunking by sentences
+      const OVERLAP_SENTENCES = 2;  // Overlap by 2 sentences for better context continuity
       
-      // Create a simple chunking function to avoid potential issues with the shared one
-      const createSimpleChunks = (text: string, chunkSize: number): string[] => {
-        const chunks: string[] = [];
-        for (let i = 0; i < text.length; i += chunkSize) {
-          const chunk = text.slice(i, i + chunkSize).trim();
-          if (chunk.length > 0) {
-            chunks.push(chunk);
-          }
-        }
-        return chunks;
-      };
-
-      const chunks = createSimpleChunks(source.rawText, SAFE_CHUNK_SIZE);
+      // Use the sentence-based chunking function
+      const chunks = chunkTextBySentences(source.rawText, SAFE_CHUNK_SIZE, OVERLAP_SENTENCES);
 
       logger.info(`RAG: Generated ${chunks.length} chunks, starting embedding generation`);
 
