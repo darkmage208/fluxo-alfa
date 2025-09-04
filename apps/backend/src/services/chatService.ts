@@ -130,15 +130,17 @@ export class ChatService {
         take: 20, // Limit context window
       });
 
-      // Get RAG context
-      const context = await this.ragService.searchRelevantContext(request.content);
+      // Get RAG context with embedding tracking
+      const ragResult = await this.ragService.searchRelevantContext(request.content);
 
-      // Save user message
+      // Save user message with embedding tracking
       const userMessage = await prisma.chatMessage.create({
         data: {
           threadId: request.threadId,
           role: 'user',
           content: request.content,
+          tokensEmbedding: ragResult.embeddingTokens,
+          embeddingCostUsd: ragResult.embeddingCost,
         },
       });
 
@@ -161,7 +163,7 @@ export class ChatService {
       let assistantMessage: ChatMessage | null = null;
       let fullResponse = '';
 
-      for await (const chunk of this.openaiService.streamChatCompletion(messages, context)) {
+      for await (const chunk of this.openaiService.streamChatCompletion(messages, ragResult.context)) {
         if (chunk.finished) {
           // Save assistant message with final token counts and cost
           assistantMessage = await prisma.chatMessage.create({

@@ -1,7 +1,7 @@
 import { prisma } from '../config/database';
 import { OpenAIService } from './openaiService';
 import logger from '../config/logger';
-import { chunkTextBySentences, DEFAULT_LIMITS } from '@fluxo/shared';
+import { chunkTextBySentences, DEFAULT_LIMITS, calculateTokens } from '@fluxo/shared';
 
 export class RAGService {
   private openaiService: OpenAIService;
@@ -10,8 +10,16 @@ export class RAGService {
     this.openaiService = new OpenAIService();
   }
 
-  async searchRelevantContext(query: string, limit: number = DEFAULT_LIMITS.MAX_SEARCH_RESULTS): Promise<string> {
+  async searchRelevantContext(query: string, limit: number = DEFAULT_LIMITS.MAX_SEARCH_RESULTS): Promise<{
+    context: string;
+    embeddingTokens: number;
+    embeddingCost: number;
+  }> {
     try {
+      // Calculate embedding tokens and cost for this query
+      const embeddingTokens = calculateTokens(query);
+      const embeddingCost = this.openaiService.calculateEmbeddingCost(embeddingTokens);
+
       // Generate embedding for the query
       const queryEmbedding = await this.openaiService.generateEmbedding(query);
 
@@ -19,7 +27,11 @@ export class RAGService {
       const similarChunks = await this.searchSimilarChunks(queryEmbedding, limit);
 
       if (similarChunks.length === 0) {
-        return '';
+        return {
+          context: '',
+          embeddingTokens,
+          embeddingCost,
+        };
       }
 
       // Combine relevant chunks into context
@@ -28,11 +40,21 @@ export class RAGService {
         .join('\n\n');
 
       logger.info(`Found ${similarChunks.length} relevant chunks for query`);
-      return context;
+      return {
+        context,
+        embeddingTokens,
+        embeddingCost,
+      };
     } catch (error) {
       logger.error('RAG search error:', error);
       // Return empty context on error, don't fail the chat
-      return '';
+      const embeddingTokens = calculateTokens(query);
+      const embeddingCost = this.openaiService.calculateEmbeddingCost(embeddingTokens);
+      return {
+        context: '',
+        embeddingTokens,
+        embeddingCost,
+      };
     }
   }
 

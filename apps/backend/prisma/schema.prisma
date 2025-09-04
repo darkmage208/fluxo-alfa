@@ -136,14 +136,16 @@ model ChatThread {
 }
 
 model ChatMessage {
-  id           String   @id @default(uuid()) @db.Uuid
-  threadId     String   @map("thread_id") @db.Uuid
-  role         String
-  content      String
-  tokensInput  Int      @default(0) @map("tokens_input")
-  tokensOutput Int      @default(0) @map("tokens_output")
-  costUsd      Decimal  @default(0) @map("cost_usd") @db.Decimal(10, 6)
-  createdAt    DateTime @default(now()) @map("created_at")
+  id               String   @id @default(uuid()) @db.Uuid
+  threadId         String   @map("thread_id") @db.Uuid
+  role             String
+  content          String
+  tokensInput      Int      @default(0) @map("tokens_input")
+  tokensOutput     Int      @default(0) @map("tokens_output")
+  tokensEmbedding  Int      @default(0) @map("tokens_embedding")
+  costUsd          Decimal  @default(0) @map("cost_usd") @db.Decimal(10, 6)
+  embeddingCostUsd Decimal  @default(0) @map("embedding_cost_usd") @db.Decimal(10, 6)
+  createdAt        DateTime @default(now()) @map("created_at")
 
   // Relations
   thread ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)

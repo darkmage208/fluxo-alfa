@@ -100,6 +100,19 @@ export const adminApiService = {
     const response = await adminApi.get('/sources/stats');
     return response.data.data;
   },
+
+  // Token Usage management
+  getTokenUsageStats: async () => {
+    const response = await adminApi.get('/usage/stats');
+    return response.data.data;
+  },
+
+  getUserTokenUsage: async (page = 1, limit = 50) => {
+    const response = await adminApi.get('/usage/users', {
+      params: { page, limit },
+    });
+    return response.data;
+  },
 };
 
 export default adminApi;

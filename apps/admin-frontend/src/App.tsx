@@ -12,6 +12,7 @@ import DashboardPage from './pages/DashboardPage';
 import UsersPage from './pages/UsersPage';
 import SubscriptionsPage from './pages/SubscriptionsPage';
 import SourcesPage from './pages/SourcesPage';
+import TokenUsagePage from './pages/TokenUsagePage';
 
 // Components
 import LoadingSpinner from './components/LoadingSpinner';
@@ -44,6 +45,7 @@ function App() {
           <Route path="users" element={<UsersPage />} />
           <Route path="subscriptions" element={<SubscriptionsPage />} />
           <Route path="sources" element={<SourcesPage />} />
+          <Route path="usage" element={<TokenUsagePage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

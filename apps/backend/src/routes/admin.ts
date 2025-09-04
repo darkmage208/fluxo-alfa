@@ -227,4 +227,33 @@ router.get('/sources/stats', async (req, res, next) => {
   }
 });
 
+// Token Usage Management Routes
+
+// @route   GET /admin/usage/stats
+// @desc    Get overall token usage statistics
+// @access  Admin
+router.get('/usage/stats', async (req, res, next) => {
+  try {
+    const stats = await adminService.getTokenUsageStats();
+    res.json(createSuccessResponse(stats, 'Token usage statistics retrieved'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   GET /admin/usage/users
+// @desc    Get per-user token usage statistics
+// @access  Admin
+router.get('/usage/users', async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 50;
+
+    const { users, total } = await adminService.getUserTokenUsage(page, limit);
+    res.json(createPaginatedResponse(users, page, limit, total));
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

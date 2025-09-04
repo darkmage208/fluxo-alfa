@@ -466,4 +466,134 @@ export class AdminService {
       throw error;
     }
   }
+
+  // Token Usage Management
+  async getTokenUsageStats(): Promise<{
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    totalEmbeddingTokens: number;
+    totalTokens: number;
+    totalCost: number;
+    totalEmbeddingCost: number;
+    totalSourceEmbeddings: number;
+    totalChatEmbeddings: number;
+  }> {
+    try {
+      const [tokenResults, costResult, embeddingResults, sourceEmbeddingCount] = await Promise.all([
+        prisma.chatMessage.aggregate({
+          _sum: { tokensInput: true, tokensOutput: true, tokensEmbedding: true },
+        }),
+        prisma.chatMessage.aggregate({
+          _sum: { costUsd: true, embeddingCostUsd: true },
+        }),
+        prisma.chatMessage.aggregate({
+          _count: { tokensEmbedding: true },
+          where: { tokensEmbedding: { gt: 0 } },
+        }),
+        prisma.sourceChunk.count(),
+      ]);
+
+      const totalInputTokens = tokenResults._sum.tokensInput || 0;
+      const totalOutputTokens = tokenResults._sum.tokensOutput || 0;
+      const totalEmbeddingTokens = tokenResults._sum.tokensEmbedding || 0;
+      const totalTokens = totalInputTokens + totalOutputTokens + totalEmbeddingTokens;
+      const totalCost = Number(costResult._sum.costUsd) || 0;
+      const totalEmbeddingCost = Number(costResult._sum.embeddingCostUsd) || 0;
+      const totalChatEmbeddings = embeddingResults._count.tokensEmbedding || 0;
+
+      return {
+        totalInputTokens,
+        totalOutputTokens,
+        totalEmbeddingTokens,
+        totalTokens,
+        totalCost,
+        totalEmbeddingCost,
+        totalSourceEmbeddings: sourceEmbeddingCount,
+        totalChatEmbeddings,
+      };
+    } catch (error) {
+      logger.error('Get token usage stats error:', error);
+      throw error;
+    }
+  }
+
+  async getUserTokenUsage(page = 1, limit = 50): Promise<{
+    users: Array<{
+      userId: string;
+      email: string;
+      role: string;
+      inputTokens: number;
+      outputTokens: number;
+      embeddingTokens: number;
+      totalTokens: number;
+      totalCost: number;
+      embeddingCost: number;
+      messageCount: number;
+      avgTokensPerMessage: number;
+    }>;
+    total: number;
+  }> {
+    try {
+      const skip = (page - 1) * limit;
+
+      // Get users with their token usage including embeddings
+      const usersWithUsage = await prisma.$queryRaw<Array<{
+        user_id: string;
+        email: string;
+        role: string;
+        input_tokens: bigint;
+        output_tokens: bigint;
+        embedding_tokens: bigint;
+        total_cost: number;
+        embedding_cost: number;
+        message_count: bigint;
+      }>>`
+        SELECT 
+          u.id as user_id,
+          u.email,
+          u.role,
+          COALESCE(SUM(cm.tokens_input), 0) as input_tokens,
+          COALESCE(SUM(cm.tokens_output), 0) as output_tokens,
+          COALESCE(SUM(cm.tokens_embedding), 0) as embedding_tokens,
+          COALESCE(SUM(cm.cost_usd), 0) as total_cost,
+          COALESCE(SUM(cm.embedding_cost_usd), 0) as embedding_cost,
+          COUNT(cm.id) as message_count
+        FROM users u
+        LEFT JOIN chat_threads ct ON ct.user_id = u.id
+        LEFT JOIN chat_messages cm ON cm.thread_id = ct.id
+        GROUP BY u.id, u.email, u.role
+        ORDER BY (COALESCE(SUM(cm.cost_usd), 0) + COALESCE(SUM(cm.embedding_cost_usd), 0)) DESC
+        LIMIT ${limit} OFFSET ${skip}
+      `;
+
+      const totalUsersCount = await prisma.user.count();
+
+      const users = usersWithUsage.map(user => {
+        const inputTokens = Number(user.input_tokens);
+        const outputTokens = Number(user.output_tokens);
+        const embeddingTokens = Number(user.embedding_tokens);
+        const totalTokens = inputTokens + outputTokens + embeddingTokens;
+        const messageCount = Number(user.message_count);
+
+        return {
+          userId: user.user_id,
+          email: user.email,
+          role: user.role,
+          inputTokens,
+          outputTokens,
+          embeddingTokens,
+          totalTokens,
+          totalCost: Number(user.total_cost),
+          embeddingCost: Number(user.embedding_cost),
+          messageCount,
+          avgTokensPerMessage: messageCount > 0 ? Math.round(totalTokens / messageCount) : 0,
+        };
+      });
+
+      return { users, total: totalUsersCount };
+    } catch (error) {
+      logger.error('Get user token usage error:', error);
+      throw error;
+    }
+  }
 }

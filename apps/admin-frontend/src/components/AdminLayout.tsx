@@ -8,7 +8,8 @@ import {
   CreditCard, 
   Database, 
   LogOut,
-  Settings
+  Settings,
+  Zap
 } from 'lucide-react';
 
 const AdminLayout = () => {
@@ -20,6 +21,7 @@ const AdminLayout = () => {
     { name: 'Users', href: '/users', icon: Users },
     { name: 'Subscriptions', href: '/subscriptions', icon: CreditCard },
     { name: 'RAG Sources', href: '/sources', icon: Database },
+    { name: 'Token Usage', href: '/usage', icon: Zap },
   ];
 
   const handleLogout = async () => {
