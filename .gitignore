@@ -151,7 +151,7 @@ out/
 # Testing
 coverage/
 .nyc_output/
-
+.claude
 # Temporary files
 tmp/
 temp/
