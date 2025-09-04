@@ -25,6 +25,7 @@ model User {
   // Relations
   sessions      Session[]
   subscription  Subscription?
+  payments      Payment[]
   chatThreads   ChatThread[]
   dailyUsage    DailyUsage[]
   passwordReset PasswordReset[]
@@ -60,18 +61,64 @@ model Subscription {
   id                   String    @id @default(uuid()) @db.Uuid
   userId               String    @unique @map("user_id") @db.Uuid
   planId               String    @default("free") @map("plan_id")
-  status               String
+  status               String    // active, canceled, past_due, etc.
+  paymentMethod        String?   @map("payment_method") // stripe, mercado_pago, kiwify
+  
+  // Gateway-specific IDs
   stripeCustomerId     String?   @map("stripe_customer_id")
   stripeSubscriptionId String?   @map("stripe_subscription_id")
+  mercadoPagoCustomerId String?  @map("mercado_pago_customer_id")
+  mercadoPagoSubscriptionId String? @map("mercado_pago_subscription_id")
+  kiwifyCustomerId     String?   @map("kiwify_customer_id")
+  kiwifySubscriptionId String?   @map("kiwify_subscription_id")
+  
+  // Subscription details
+  currentPeriodStart   DateTime? @map("current_period_start")
   currentPeriodEnd     DateTime? @map("current_period_end")
+  nextBillingDate      DateTime? @map("next_billing_date")
+  cancelAtPeriodEnd    Boolean   @default(false) @map("cancel_at_period_end")
+  canceledAt           DateTime? @map("canceled_at")
+  
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan Plan @relation(fields: [planId], references: [id])
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan     Plan      @relation(fields: [planId], references: [id])
+  payments Payment[]
 
   @@map("subscriptions")
+}
+
+model Payment {
+  id             String      @id @default(uuid()) @db.Uuid
+  userId         String      @map("user_id") @db.Uuid
+  subscriptionId String?     @map("subscription_id") @db.Uuid
+  amount         Decimal     @db.Decimal(10, 2)
+  currency       String      @default("usd")
+  status         String      // succeeded, failed, pending, refunded
+  type           String      // subscription, one_time, refund
+  paymentMethod  String      @map("payment_method") // stripe, mercado_pago, kiwify
+  description    String?
+  
+  // Gateway-specific transaction IDs
+  stripePaymentIntentId String? @map("stripe_payment_intent_id")
+  stripeChargeId String?     @map("stripe_charge_id")
+  mercadoPagoPaymentId String? @map("mercado_pago_payment_id")
+  kiwifyTransactionId  String? @map("kiwify_transaction_id")
+  
+  // Gateway response data
+  gatewayResponse Json?      @map("gateway_response") @db.Json
+  metadata       Json?       @db.Json
+  
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@map("payments")
 }
 
 model ChatThread {

@@ -113,6 +113,36 @@ router.get('/subscriptions', async (req, res, next) => {
   }
 });
 
+// Payment History Routes
+
+// @route   GET /admin/payments
+// @desc    Get payment history
+// @access  Admin
+router.get('/payments', async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 50;
+    const userId = req.query.userId as string;
+
+    const { payments, total } = await adminService.getPayments(page, limit, userId);
+    res.json(createPaginatedResponse(payments, page, limit, total));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   GET /admin/payments/stats
+// @desc    Get payment statistics
+// @access  Admin
+router.get('/payments/stats', async (req, res, next) => {
+  try {
+    const stats = await adminService.getPaymentStats();
+    res.json(createSuccessResponse(stats, 'Payment statistics retrieved'));
+  } catch (error) {
+    next(error);
+  }
+});
+
 // RAG Sources Management Routes
 
 // @route   GET /admin/sources

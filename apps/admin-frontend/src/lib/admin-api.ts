@@ -56,6 +56,19 @@ export const adminApiService = {
     return response.data;
   },
 
+  // Payment history management
+  getPayments: async (page = 1, limit = 50, userId?: string) => {
+    const response = await adminApi.get('/payments', {
+      params: { page, limit, userId },
+    });
+    return response.data;
+  },
+
+  getPaymentStats: async () => {
+    const response = await adminApi.get('/payments/stats');
+    return response.data.data;
+  },
+
   // RAG Sources management
   getSources: async (page = 1, limit = 20, search?: string) => {
     const response = await adminApi.get('/sources', {

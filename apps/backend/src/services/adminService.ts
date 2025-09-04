@@ -54,7 +54,7 @@ export class AdminService {
           where: {
             createdAt: { gte: today },
           },
-          distinct: ['thread'],
+          distinct: ['threadId'],
           include: { thread: { select: { userId: true } } },
         }),
       ]);
@@ -232,6 +232,93 @@ export class AdminService {
       return { subscriptions: sanitizedSubscriptions, total };
     } catch (error) {
       logger.error('Get subscriptions error:', error);
+      throw error;
+    }
+  }
+
+  // Payment History Management
+  async getPayments(page = 1, limit = 50, userId?: string): Promise<{
+    payments: any[];
+    total: number;
+  }> {
+    try {
+      const skip = (page - 1) * limit;
+      const where = userId ? { userId } : {};
+
+      const [payments, total] = await Promise.all([
+        prisma.payment.findMany({
+          where,
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                role: true,
+              }
+            },
+            subscription: {
+              include: {
+                plan: true,
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        prisma.payment.count({ where }),
+      ]);
+
+      return { payments, total };
+    } catch (error) {
+      logger.error('Get payments error:', error);
+      throw error;
+    }
+  }
+
+  async getPaymentStats(): Promise<{
+    totalRevenue: number;
+    monthlyRevenue: number;
+    successfulPayments: number;
+    failedPayments: number;
+  }> {
+    try {
+      const now = new Date();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      const [
+        totalRevenueResult,
+        monthlyRevenueResult,
+        successfulPayments,
+        failedPayments,
+      ] = await Promise.all([
+        prisma.payment.aggregate({
+          where: { status: 'succeeded' },
+          _sum: { amount: true },
+        }),
+        prisma.payment.aggregate({
+          where: {
+            status: 'succeeded',
+            createdAt: { gte: firstDayOfMonth },
+          },
+          _sum: { amount: true },
+        }),
+        prisma.payment.count({
+          where: { status: 'succeeded' },
+        }),
+        prisma.payment.count({
+          where: { status: 'failed' },
+        }),
+      ]);
+
+      return {
+        totalRevenue: Number(totalRevenueResult._sum.amount) || 0,
+        monthlyRevenue: Number(monthlyRevenueResult._sum.amount) || 0,
+        successfulPayments,
+        failedPayments,
+      };
+    } catch (error) {
+      logger.error('Get payment stats error:', error);
       throw error;
     }
   }
