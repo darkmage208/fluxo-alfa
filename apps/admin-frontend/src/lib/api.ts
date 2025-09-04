@@ -48,9 +48,14 @@ api.interceptors.response.use(
         
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed, clear tokens and redirect to login
+        // Refresh failed, clear tokens and trigger auth check
         clearTokens();
-        window.location.href = '/login';
+        
+        // Dispatch a custom event to notify components that auth failed
+        window.dispatchEvent(new CustomEvent('auth-failed'));
+        
+        // Don't force redirect here, let React Router handle it
+        return Promise.reject(refreshError);
       }
     }
 

@@ -32,11 +32,38 @@ export class AdminService {
       // Use optimized analytics service for fast pre-aggregated data
       const optimizedMetrics = await this.analyticsService.getOptimizedOverviewMetrics();
       
-      // Get subscription counts (these are still fast queries)
-      const [totalSubscriptions, activeSubscriptions] = await Promise.all([
+      // Get today's data
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const [totalSubscriptions, activeSubscriptions, todayStats, todayRevenue, todayCosts] = await Promise.all([
         prisma.subscription.count(),
         prisma.subscription.count({ where: { status: 'active' } }),
+        // Get today's user activity from daily stats
+        prisma.systemDailyStats.findUnique({
+          where: { date: today }
+        }),
+        // Get today's revenue from payments
+        prisma.payment.aggregate({
+          where: {
+            status: 'succeeded',
+            createdAt: { gte: today }
+          },
+          _sum: { amount: true }
+        }),
+        // Get today's costs from daily stats
+        prisma.systemDailyStats.findUnique({
+          where: { date: today },
+          select: {
+            costUsd: true,
+            embeddingCostUsd: true
+          }
+        })
       ]);
+
+      const todayActiveUsers = todayStats?.activeUsers || 0;
+      const todayRevenueAmount = Number(todayRevenue._sum.amount) || 0;
+      const todayTotalCosts = todayCosts ? (Number(todayCosts.costUsd) + Number(todayCosts.embeddingCostUsd)) : 0;
 
       return {
         totalUsers: optimizedMetrics.totalUsers,
@@ -48,7 +75,10 @@ export class AdminService {
         totalChats: optimizedMetrics.totalChats,
         totalTokens: optimizedMetrics.totalTokens,
         totalCost: optimizedMetrics.totalCost,
-        dailyActiveUsers: optimizedMetrics.dailyActiveUsers,
+        dailyActiveUsers: todayActiveUsers,
+        totalRevenue: optimizedMetrics.totalRevenue,
+        todayRevenue: todayRevenueAmount,
+        todayTotalCosts: todayTotalCosts,
       };
     } catch (error) {
       logger.error('Get overview metrics error:', error);
@@ -74,6 +104,9 @@ export class AdminService {
           totalTokens: 0,
           totalCost: 0,
           dailyActiveUsers: activeUsers,
+          totalRevenue: 0,
+          todayRevenue: 0,
+          todayTotalCosts: 0,
         };
       } catch (fallbackError) {
         logger.error('Fallback metrics error:', fallbackError);

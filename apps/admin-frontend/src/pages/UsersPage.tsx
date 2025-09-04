@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +21,9 @@ import {
   Shield, 
   Trash2,
   KeyRound,
-  CreditCard
+  CreditCard,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 const UsersPage = () => {
@@ -28,15 +31,31 @@ const UsersPage = () => {
   const [metrics, setMetrics] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalUsers, setTotalUsers] = useState(0);
   const { toast } = useToast();
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setCurrentPage(1); // Reset to first page on search
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const loadUsers = async () => {
     try {
+      setIsLoading(true);
       const [usersResponse, metricsResponse] = await Promise.all([
-        adminApiService.getUsers(1, 100, searchTerm),
+        adminApiService.getUsers(currentPage, pageSize, debouncedSearchTerm),
         adminApiService.getOverviewMetrics()
       ]);
-      setUsers(usersResponse.data);
+      setUsers(usersResponse.data || []);
+      setTotalUsers(usersResponse.pagination?.total || usersResponse.data?.length || 0);
       setMetrics(metricsResponse);
     } catch (error: any) {
       toast({
@@ -51,7 +70,7 @@ const UsersPage = () => {
 
   useEffect(() => {
     loadUsers();
-  }, [searchTerm]);
+  }, [debouncedSearchTerm, currentPage, pageSize]);
 
   const handleToggleActive = async (userId: string, isActive: boolean) => {
     try {
@@ -187,17 +206,39 @@ const UsersPage = () => {
         </div>
       )}
 
-      {/* Search */}
+      {/* Search and Controls */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center space-x-2">
-            <Search className="w-4 h-4 text-gray-400" />
-            <Input
-              placeholder="Search users by email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="flex items-center space-x-2 flex-1">
+              <Search className="w-4 h-4 text-gray-400" />
+              <Input
+                placeholder="Search users by email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-sm"
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">Show:</span>
+              <Select 
+                value={pageSize.toString()} 
+                onValueChange={(value) => {
+                  setPageSize(Number(value));
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-gray-600">per page</span>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -205,10 +246,13 @@ const UsersPage = () => {
       {/* Users Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Users ({users.length})</CardTitle>
+          <CardTitle>
+            Users ({totalUsers.toLocaleString()} total)
+            {debouncedSearchTerm && ` - showing search results for "${debouncedSearchTerm}"`}
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
+        <CardContent className="p-0">
+          <div className="overflow-auto max-h-[600px]">
             <table className="w-full table-auto">
               <thead>
                 <tr className="border-b">
@@ -301,12 +345,112 @@ const UsersPage = () => {
               </tbody>
             </table>
             
-            {users.length === 0 && (
+            {users.length === 0 && !isLoading && (
               <div className="text-center py-8 text-gray-500">
-                No users found
+                {debouncedSearchTerm ? `No users found matching "${debouncedSearchTerm}"` : 'No users found'}
               </div>
             )}
           </div>
+          
+          {/* Pagination */}
+          {totalUsers > 0 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
+              <div className="flex items-center text-sm text-gray-600">
+                Showing {Math.min((currentPage - 1) * pageSize + 1, totalUsers)} to {Math.min(currentPage * pageSize, totalUsers)} of {totalUsers.toLocaleString()} users
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage <= 1 || isLoading}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Previous
+                </Button>
+                
+                <div className="flex items-center space-x-1">
+                  {(() => {
+                    const totalPages = Math.ceil(totalUsers / pageSize);
+                    const pages = [];
+                    
+                    // Always show first page
+                    pages.push(
+                      <Button
+                        key={1}
+                        variant={currentPage === 1 ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(1)}
+                        disabled={isLoading}
+                        className="w-8 h-8 p-0"
+                      >
+                        1
+                      </Button>
+                    );
+                    
+                    // Add ellipsis if needed
+                    if (currentPage > 4) {
+                      pages.push(<span key="ellipsis1" className="px-2 text-gray-400">...</span>);
+                    }
+                    
+                    // Add pages around current page
+                    const startPage = Math.max(2, currentPage - 1);
+                    const endPage = Math.min(totalPages - 1, currentPage + 1);
+                    
+                    for (let i = startPage; i <= endPage; i++) {
+                      if (i !== 1 && i !== totalPages) {
+                        pages.push(
+                          <Button
+                            key={i}
+                            variant={currentPage === i ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCurrentPage(i)}
+                            disabled={isLoading}
+                            className="w-8 h-8 p-0"
+                          >
+                            {i}
+                          </Button>
+                        );
+                      }
+                    }
+                    
+                    // Add ellipsis if needed
+                    if (currentPage < totalPages - 3) {
+                      pages.push(<span key="ellipsis2" className="px-2 text-gray-400">...</span>);
+                    }
+                    
+                    // Always show last page if there's more than 1 page
+                    if (totalPages > 1) {
+                      pages.push(
+                        <Button
+                          key={totalPages}
+                          variant={currentPage === totalPages ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(totalPages)}
+                          disabled={isLoading}
+                          className="w-8 h-8 p-0"
+                        >
+                          {totalPages}
+                        </Button>
+                      );
+                    }
+                    
+                    return pages;
+                  })()}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage >= Math.ceil(totalUsers / pageSize) || isLoading}
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

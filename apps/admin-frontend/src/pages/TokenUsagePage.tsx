@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { adminApiService } from '@/lib/admin-api';
 import { formatCurrency } from '@/lib/utils';
@@ -18,7 +20,9 @@ import {
   BarChart3,
   Calendar,
   Clock,
-  CalendarDays
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 const TokenUsagePage = () => {
@@ -38,7 +42,7 @@ const TokenUsagePage = () => {
     users: [],
     total: 0,
     page: 1,
-    limit: 20,
+    limit: 25,
     period: '',
   });
   
@@ -85,6 +89,10 @@ const TokenUsagePage = () => {
 
   const handlePageChange = (newPage: number) => {
     setUserUsageData(prev => ({ ...prev, page: newPage }));
+  };
+
+  const handlePageSizeChange = (newLimit: number) => {
+    setUserUsageData(prev => ({ ...prev, limit: newLimit, page: 1 }));
   };
 
   const totalPages = Math.ceil(userUsageData.total / userUsageData.limit);
@@ -411,54 +419,127 @@ const TokenUsagePage = () => {
             )}
           </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6 pt-4 border-t">
-              <div className="text-sm text-gray-500">
-                Showing {((userUsageData.page - 1) * userUsageData.limit) + 1} to{' '}
-                {Math.min(userUsageData.page * userUsageData.limit, userUsageData.total)} of{' '}
-                {userUsageData.total} users
+          {/* Enhanced Pagination */}
+          {userUsageData.total > 0 && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-6 pt-4 border-t bg-gray-50 px-4 py-3 rounded-lg space-y-3 sm:space-y-0">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                <div className="text-sm text-gray-600">
+                  Showing {Math.min((userUsageData.page - 1) * userUsageData.limit + 1, userUsageData.total)} to{' '}
+                  {Math.min(userUsageData.page * userUsageData.limit, userUsageData.total)} of{' '}
+                  {userUsageData.total.toLocaleString()} users
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">Show:</span>
+                  <Select 
+                    value={userUsageData.limit.toString()} 
+                    onValueChange={(value) => handlePageSizeChange(Number(value))}
+                  >
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-gray-600">per page</span>
+                </div>
               </div>
               
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handlePageChange(userUsageData.page - 1)}
-                  disabled={userUsageData.page === 1 || loading}
-                  className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  Previous
-                </button>
-                
-                <div className="flex space-x-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    const pageNum = Math.max(1, userUsageData.page - 2) + i;
-                    if (pageNum > totalPages) return null;
-                    
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        disabled={loading}
-                        className={`px-3 py-1 border rounded text-sm ${
-                          userUsageData.page === pageNum
-                            ? 'bg-blue-500 text-white border-blue-500'
-                            : 'hover:bg-gray-50'
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
+              {totalPages > 1 && (
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(userUsageData.page - 1)}
+                    disabled={userUsageData.page <= 1 || loading}
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-1" />
+                    Previous
+                  </Button>
+                  
+                  <div className="flex items-center space-x-1">
+                    {(() => {
+                      const pages = [];
+                      
+                      // Always show first page
+                      pages.push(
+                        <Button
+                          key={1}
+                          variant={userUsageData.page === 1 ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handlePageChange(1)}
+                          disabled={loading}
+                          className="w-8 h-8 p-0"
+                        >
+                          1
+                        </Button>
+                      );
+                      
+                      // Add ellipsis if needed
+                      if (userUsageData.page > 4) {
+                        pages.push(<span key="ellipsis1" className="px-2 text-gray-400">...</span>);
+                      }
+                      
+                      // Add pages around current page
+                      const startPage = Math.max(2, userUsageData.page - 1);
+                      const endPage = Math.min(totalPages - 1, userUsageData.page + 1);
+                      
+                      for (let i = startPage; i <= endPage; i++) {
+                        if (i !== 1 && i !== totalPages) {
+                          pages.push(
+                            <Button
+                              key={i}
+                              variant={userUsageData.page === i ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => handlePageChange(i)}
+                              disabled={loading}
+                              className="w-8 h-8 p-0"
+                            >
+                              {i}
+                            </Button>
+                          );
+                        }
+                      }
+                      
+                      // Add ellipsis if needed
+                      if (userUsageData.page < totalPages - 3) {
+                        pages.push(<span key="ellipsis2" className="px-2 text-gray-400">...</span>);
+                      }
+                      
+                      // Always show last page if there's more than 1 page
+                      if (totalPages > 1) {
+                        pages.push(
+                          <Button
+                            key={totalPages}
+                            variant={userUsageData.page === totalPages ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handlePageChange(totalPages)}
+                            disabled={loading}
+                            className="w-8 h-8 p-0"
+                          >
+                            {totalPages}
+                          </Button>
+                        );
+                      }
+                      
+                      return pages;
+                    })()}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(userUsageData.page + 1)}
+                    disabled={userUsageData.page >= totalPages || loading}
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
                 </div>
-                
-                <button
-                  onClick={() => handlePageChange(userUsageData.page + 1)}
-                  disabled={userUsageData.page === totalPages || loading}
-                  className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  Next
-                </button>
-              </div>
+              )}
             </div>
           )}
         </CardContent>

@@ -138,37 +138,165 @@ async function createTestData() {
       }
     }
 
-    // Create some test payments
-    const proUsers = await prisma.user.findMany({
-      where: {
-        subscription: {
-          planId: 'pro'
-        }
-      },
+    // Create comprehensive test payments with all payment methods
+    const allUsers = await prisma.user.findMany({
       include: {
         subscription: true
       }
     });
 
-    for (const user of proUsers) {
-      const paymentCount = Math.floor(Math.random() * 3) + 1;
+    const paymentMethods = [
+      'stripe',
+      'mercado_pago', 
+      'kiwify',
+      'credit_card',
+      'pix',
+      'boleto_bancario',
+      'wallet',
+      'bank_debit',
+      'paypal',
+      'apple_pay',
+      'google_pay'
+    ];
+
+    const paymentTypes = ['subscription', 'one_time', 'refund', 'chargeback'];
+    const paymentStatuses = ['succeeded', 'failed', 'pending', 'refunded'];
+    const currencies = ['usd', 'brl', 'eur'];
+
+    for (const user of allUsers) {
+      const paymentCount = Math.floor(Math.random() * 8) + 2; // 2-10 payments per user
       
       for (let i = 0; i < paymentCount; i++) {
-        await prisma.payment.create({
-          data: {
-            userId: user.id,
-            subscriptionId: user.subscription.id,
-            amount: 29.99,
-            currency: 'usd',
-            status: 'succeeded',
-            type: 'subscription',
-            paymentMethod: Math.random() > 0.5 ? 'stripe' : 'mercado_pago',
-            description: `Monthly subscription - ${new Date().toLocaleDateString()}`,
-            stripePaymentIntentId: `pi_test_${Math.random().toString(36).substr(2, 9)}`,
-            createdAt: new Date(Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000) // Random date within last 60 days
-          }
-        });
+        const paymentMethod = paymentMethods[Math.floor(Math.random() * paymentMethods.length)];
+        const paymentType = paymentTypes[Math.floor(Math.random() * paymentTypes.length)];
+        const currency = currencies[Math.floor(Math.random() * currencies.length)];
+        
+        // Bias towards successful payments (80% success rate)
+        const status = Math.random() < 0.8 ? 'succeeded' : 
+                      Math.random() < 0.7 ? 'failed' : 
+                      Math.random() < 0.8 ? 'pending' : 'refunded';
+
+        // Different amounts based on type and currency
+        let amount;
+        if (currency === 'brl') {
+          amount = paymentType === 'subscription' ? 149.90 : (Math.random() * 500 + 50);
+        } else if (currency === 'eur') {
+          amount = paymentType === 'subscription' ? 24.99 : (Math.random() * 100 + 20);
+        } else {
+          amount = paymentType === 'subscription' ? 29.99 : (Math.random() * 100 + 10);
+        }
+
+        // Refunds should be negative amounts
+        if (paymentType === 'refund') {
+          amount = -Math.abs(amount);
+        }
+
+        const createdAt = new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000); // Random date within last 90 days
+
+        const paymentData = {
+          userId: user.id,
+          subscriptionId: user.subscription?.id || null,
+          amount: Number(amount.toFixed(2)),
+          currency,
+          status,
+          type: paymentType,
+          paymentMethod,
+          description: getPaymentDescription(paymentType, paymentMethod, currency),
+          createdAt,
+          gatewayResponse: generateGatewayResponse(paymentMethod, status),
+          metadata: generatePaymentMetadata(paymentMethod, paymentType)
+        };
+
+        // Add method-specific transaction IDs
+        switch (paymentMethod) {
+          case 'stripe':
+            paymentData.stripePaymentIntentId = `pi_test_${Math.random().toString(36).substr(2, 9)}`;
+            paymentData.stripeChargeId = `ch_test_${Math.random().toString(36).substr(2, 9)}`;
+            break;
+          case 'mercado_pago':
+            paymentData.mercadoPagoPaymentId = Math.floor(Math.random() * 999999999).toString();
+            break;
+          case 'kiwify':
+            paymentData.kiwifyTransactionId = `kw_${Math.random().toString(36).substr(2, 12)}`;
+            break;
+        }
+
+        await prisma.payment.create({ data: paymentData });
       }
+    }
+
+    // Helper functions for generating realistic test data
+    function getPaymentDescription(type, method, currency) {
+      const descriptions = {
+        subscription: [
+          `Monthly Pro subscription - ${method}`,
+          `Premium plan renewal via ${method}`,
+          `Subscription payment (${currency.toUpperCase()})`
+        ],
+        one_time: [
+          `One-time purchase via ${method}`,
+          `Additional credits purchase`,
+          `Premium feature unlock`
+        ],
+        refund: [
+          `Refund for subscription cancellation`,
+          `Customer refund request`,
+          `Disputed charge refund`
+        ],
+        chargeback: [
+          `Chargeback dispute`,
+          `Bank reversal`,
+          `Card dispute`
+        ]
+      };
+      
+      const typeDescriptions = descriptions[type] || ['Payment'];
+      return typeDescriptions[Math.floor(Math.random() * typeDescriptions.length)];
+    }
+
+    function generateGatewayResponse(method, status) {
+      const baseResponse = {
+        method,
+        processed_at: new Date().toISOString(),
+        status
+      };
+
+      switch (method) {
+        case 'stripe':
+          return {
+            ...baseResponse,
+            stripe_fee: Math.random() * 2 + 0.30,
+            card_last4: Math.floor(Math.random() * 9000) + 1000,
+            card_brand: ['visa', 'mastercard', 'amex'][Math.floor(Math.random() * 3)]
+          };
+        case 'mercado_pago':
+          return {
+            ...baseResponse,
+            mercadopago_fee: Math.random() * 3 + 0.50,
+            payment_type: ['credit_card', 'debit_card', 'pix'][Math.floor(Math.random() * 3)]
+          };
+        case 'kiwify':
+          return {
+            ...baseResponse,
+            kiwify_fee: Math.random() * 2 + 0.25,
+            transaction_type: 'digital_product'
+          };
+        default:
+          return baseResponse;
+      }
+    }
+
+    function generatePaymentMetadata(method, type) {
+      return {
+        source: 'admin_test_data',
+        payment_flow: type === 'subscription' ? 'recurring' : 'one_time',
+        user_agent: 'Mozilla/5.0 Test Browser',
+        ip_address: `192.168.1.${Math.floor(Math.random() * 255)}`,
+        method_details: {
+          gateway: method,
+          processed_by: 'test_system'
+        }
+      };
     }
 
     console.log('Test data created successfully!');

@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { adminApiService } from '@/lib/admin-api';
 import { formatDate } from '@/lib/utils';
@@ -13,7 +19,10 @@ import {
   Trash2, 
   RefreshCw,
   Eye,
-  EyeOff 
+  EyeOff,
+  MoreHorizontal,
+  Edit,
+  AlertCircle
 } from 'lucide-react';
 
 const SourcesPage = () => {
@@ -277,23 +286,54 @@ const SourcesPage = () => {
                       {formatDate(source.updatedAt)}
                     </td>
                     <td className="p-2">
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleToggleActive(source.id, source.isActive)}
-                        >
-                          {source.isActive ? 'Deactivate' : 'Activate'}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-red-600 hover:text-red-700"
-                          onClick={() => handleDeleteSource(source.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => handleToggleActive(source.id, source.isActive)}
+                          >
+                            {source.isActive ? (
+                              <><EyeOff className="mr-2 h-4 w-4" />Deactivate</>
+                            ) : (
+                              <><Eye className="mr-2 h-4 w-4" />Activate</>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              const content = `Title: ${source.title}\n\nContent:\n${source.rawText}\n\nTags: ${source.tags?.join(', ') || 'None'}`;
+                              navigator.clipboard.writeText(content);
+                              toast({
+                                title: "Content copied",
+                                description: "Source content copied to clipboard",
+                              });
+                            }}
+                          >
+                            <Edit className="mr-2 h-4 w-4" />
+                            Copy Content
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              const details = `Source: ${source.title}\nStatus: ${source.isActive ? 'Active' : 'Inactive'}\nCreated: ${formatDate(source.createdAt)}\nUpdated: ${formatDate(source.updatedAt)}\nContent Length: ${source.rawText?.length || 0} characters\nTags: ${source.tags?.length || 0}`;
+                              alert(details);
+                            }}
+                          >
+                            <AlertCircle className="mr-2 h-4 w-4" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteSource(source.id)}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete Source
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </td>
                   </tr>
                 ))}

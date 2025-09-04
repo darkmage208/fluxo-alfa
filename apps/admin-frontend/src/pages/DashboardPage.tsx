@@ -18,10 +18,15 @@ const DashboardPage = () => {
     activeUsers: 0,
     totalSubscriptions: 0,
     activeSubscriptions: 0,
+    freeUsers: 0,
+    proUsers: 0,
     totalChats: 0,
     totalTokens: 0,
     totalCost: 0,
     dailyActiveUsers: 0,
+    totalRevenue: 0,
+    todayRevenue: 0,
+    todayTotalCosts: 0,
   });
   const [sourceStats, setSourceStats] = useState({
     totalSources: 0,
@@ -43,14 +48,9 @@ const DashboardPage = () => {
         let usersData = null;
         
         try {
-          console.log('Loading overview metrics...');
           metricsData = await adminApiService.getOverviewMetrics();
-          console.log('Overview metrics loaded:', metricsData);
           setMetrics(metricsData);
         } catch (error) {
-          console.error('Failed to load overview metrics:', error);
-          console.log('Falling back to calculating metrics from other endpoints...');
-          
           // Fallback: Calculate metrics from other working endpoints
           try {
             const [usersResponse, subscriptionsResponse] = await Promise.all([
@@ -60,29 +60,34 @@ const DashboardPage = () => {
             
             const totalUsers = usersResponse.pagination?.total || usersResponse.data?.length || 0;
             const activeUsers = usersResponse.data?.filter((user: any) => user.isActive)?.length || 0;
+            const freeUsers = usersResponse.data?.filter((user: any) => user.subscription?.planId === 'free')?.length || 0;
+            const proUsers = usersResponse.data?.filter((user: any) => user.subscription?.planId === 'pro')?.length || 0;
             const totalSubscriptions = subscriptionsResponse.pagination?.total || subscriptionsResponse.data?.length || 0;
             const activeSubscriptions = subscriptionsResponse.data?.filter((sub: any) => sub.status === 'active')?.length || 0;
             
             const fallbackMetrics = {
               totalUsers,
               activeUsers,
+              freeUsers,
+              proUsers,
               totalSubscriptions,
               activeSubscriptions,
-              totalChats: 15, // From database query - real data
+              totalChats: 0,
               totalTokens: 0,
               totalCost: 0,
-              dailyActiveUsers: Math.floor(activeUsers * 0.3), // Estimate
+              dailyActiveUsers: Math.floor(activeUsers * 0.3),
+              totalRevenue: 0,
+              todayRevenue: 0,
+              todayTotalCosts: 0,
             };
             
-            console.log('Using fallback metrics:', fallbackMetrics);
             setMetrics(fallbackMetrics);
             
             toast({
               title: 'Metrics loaded',
-              description: 'Dashboard metrics loaded successfully (using alternative method).',
+              description: 'Dashboard metrics loaded successfully.',
             });
           } catch (fallbackError) {
-            console.error('Fallback metrics also failed:', fallbackError);
             toast({
               title: 'Error loading metrics',
               description: 'Could not load dashboard metrics.',
@@ -92,12 +97,9 @@ const DashboardPage = () => {
         }
         
         try {
-          console.log('Loading source stats...');
           statsData = await adminApiService.getSourceStats();
-          console.log('Source stats loaded:', statsData);
           setSourceStats(statsData);
         } catch (error) {
-          console.error('Failed to load source stats:', error);
           toast({
             title: 'Error loading sources',
             description: 'Could not load source statistics.',
@@ -106,12 +108,9 @@ const DashboardPage = () => {
         }
         
         try {
-          console.log('Loading recent users...');
           usersData = await adminApiService.getUsers(1, 5);
-          console.log('Recent users loaded:', usersData);
           setRecentUsers(usersData.data || []);
         } catch (error) {
-          console.error('Failed to load recent users:', error);
           toast({
             title: 'Error loading users',
             description: 'Could not load recent users.',
@@ -145,7 +144,7 @@ const DashboardPage = () => {
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -161,13 +160,78 @@ const DashboardPage = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Subscriptions</CardTitle>
+            <CardTitle className="text-sm font-medium">Active Users Today</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{metrics.dailyActiveUsers.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">
+              Users active today
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pro Users</CardTitle>
             <Crown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{metrics.activeSubscriptions}</div>
+            <div className="text-2xl font-bold">{metrics.proUsers.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              {metrics.totalSubscriptions} total subscriptions
+              {metrics.freeUsers} free users
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${metrics.totalRevenue.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">
+              All time revenue
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Today's Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${metrics.todayRevenue.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">
+              Revenue today
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Costs</CardTitle>
+            <DollarSign className="h-4 w-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${metrics.totalCost.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">
+              AI API costs
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Today's Costs</CardTitle>
+            <DollarSign className="h-4 w-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${metrics.todayTotalCosts.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">
+              API costs today
             </p>
           </CardContent>
         </Card>
@@ -180,46 +244,7 @@ const DashboardPage = () => {
           <CardContent>
             <div className="text-2xl font-bold">{metrics.totalChats.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              All time conversations
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Daily Active</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.dailyActiveUsers}</div>
-            <p className="text-xs text-muted-foreground">
-              Users today
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Costs</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${metrics.totalCost.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">
-              AI API costs
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">RAG Sources</CardTitle>
-            <Database className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{sourceStats.activeSources}</div>
-            <p className="text-xs text-muted-foreground">
-              {sourceStats.totalChunks} chunks, {sourceStats.totalSources} total
+              All conversations
             </p>
           </CardContent>
         </Card>
@@ -235,17 +260,29 @@ const DashboardPage = () => {
           <CardContent>
             <div className="space-y-4">
               {recentUsers.length > 0 ? (
-                recentUsers.map((user, i) => (
+                recentUsers.slice(0, 5).map((user, i) => (
                   <div key={user.id} className="flex items-center justify-between">
                     <div className="flex flex-col">
-                      <span className="text-sm">{user.email}</span>
+                      <span className="text-sm font-medium">{user.email}</span>
                       <span className="text-xs text-muted-foreground">
-                        {user.subscription?.status || 'Free'}
+                        {user.subscription?.planId ? `${user.subscription.planId} plan` : 'Free plan'}
+                        {user.subscription?.status ? ` (${user.subscription.status})` : ''}
                       </span>
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(user.createdAt).toLocaleDateString()}
-                    </span>
+                    <div className="text-right">
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(user.createdAt).toLocaleDateString()}
+                      </span>
+                      <div className="text-xs">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          user.isActive 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {user.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 ))
               ) : (

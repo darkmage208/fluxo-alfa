@@ -149,6 +149,9 @@ export const AdminMetricsSchema = z.object({
   totalTokens: z.number().int().min(0),
   totalCost: z.number().min(0),
   dailyActiveUsers: z.number().int().min(0),
+  totalRevenue: z.number().min(0),
+  todayRevenue: z.number().min(0),
+  todayTotalCosts: z.number().min(0),
 });
 
 export type AdminMetrics = z.infer<typeof AdminMetricsSchema>;
