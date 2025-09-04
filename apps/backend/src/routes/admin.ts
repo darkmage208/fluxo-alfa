@@ -256,4 +256,47 @@ router.get('/usage/users', async (req, res, next) => {
   }
 });
 
+// @route   GET /admin/usage/timeframe/:timeframe
+// @desc    Get token usage statistics by timeframe (total, month, day)
+// @access  Admin
+router.get('/usage/timeframe/:timeframe', async (req, res, next) => {
+  try {
+    const timeframe = req.params.timeframe as 'total' | 'month' | 'day';
+    const startDate = req.query.startDate as string;
+    const endDate = req.query.endDate as string;
+    
+    if (!['total', 'month', 'day'].includes(timeframe)) {
+      return res.status(400).json({ error: 'Invalid timeframe. Use: total, month, or day' });
+    }
+
+    const stats = await adminService.getTokenUsageByTimeframe(timeframe, startDate, endDate);
+    res.json(createSuccessResponse(stats, 'Token usage statistics retrieved'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   GET /admin/usage/users/:timeframe
+// @desc    Get per-user token usage statistics by timeframe
+// @access  Admin
+router.get('/usage/users/:timeframe', async (req, res, next) => {
+  try {
+    const timeframe = req.params.timeframe as 'total' | 'month' | 'day';
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 50;
+    const startDate = req.query.startDate as string;
+    const endDate = req.query.endDate as string;
+    
+    if (!['total', 'month', 'day'].includes(timeframe)) {
+      return res.status(400).json({ error: 'Invalid timeframe. Use: total, month, or day' });
+    }
+
+    const { users, total, period } = await adminService.getUserTokenUsageByTimeframe(timeframe, page, limit, startDate, endDate);
+    const response = createPaginatedResponse(users, page, limit, total);
+    res.json({ ...response, period });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

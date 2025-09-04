@@ -15,7 +15,10 @@ import {
   Crown,
   Shield,
   TrendingUp,
-  BarChart3
+  BarChart3,
+  Calendar,
+  Clock,
+  CalendarDays
 } from 'lucide-react';
 
 const TokenUsagePage = () => {
@@ -26,8 +29,9 @@ const TokenUsagePage = () => {
     totalTokens: 0,
     totalCost: 0,
     totalEmbeddingCost: 0,
-    totalSourceEmbeddings: 0,
-    totalChatEmbeddings: 0,
+    totalConsumptionCost: 0,
+    messageCount: 0,
+    period: '',
   });
   
   const [userUsageData, setUserUsageData] = useState({
@@ -35,29 +39,37 @@ const TokenUsagePage = () => {
     total: 0,
     page: 1,
     limit: 20,
+    period: '',
   });
   
+  const [timeframe, setTimeframe] = useState<'total' | 'month' | 'day'>('total');
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     loadTokenUsageData();
-  }, [userUsageData.page]);
+  }, [userUsageData.page, timeframe, selectedDate]);
 
   const loadTokenUsageData = async () => {
     try {
       setLoading(true);
       
+      const startDate = timeframe === 'total' ? undefined : selectedDate;
+      const endDate = timeframe === 'total' ? undefined : selectedDate;
+      
       const [statsResponse, usersResponse] = await Promise.all([
-        adminApiService.getTokenUsageStats(),
-        adminApiService.getUserTokenUsage(userUsageData.page, userUsageData.limit)
+        adminApiService.getTokenUsageByTimeframe(timeframe, startDate, endDate),
+        adminApiService.getUserTokenUsageByTimeframe(timeframe, userUsageData.page, userUsageData.limit, startDate, endDate)
       ]);
       
       setOverallStats(statsResponse);
+      
       setUserUsageData(prev => ({
         ...prev,
         users: usersResponse.data,
         total: usersResponse.pagination?.total || usersResponse.total,
+        period: usersResponse.period || statsResponse.period,
       }));
       
     } catch (error: any) {
@@ -87,18 +99,77 @@ const TokenUsagePage = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold flex items-center">
-          <Zap className="w-8 h-8 mr-3 text-yellow-500" />
-          Token Usage Analytics
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Detailed token consumption and cost analysis across all users
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center">
+            <Zap className="w-8 h-8 mr-3 text-yellow-500" />
+            Token Usage Analytics
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Detailed token consumption and cost analysis - {userUsageData.period}
+          </p>
+        </div>
+        
+        {/* Timeframe Selector */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 mt-4 sm:mt-0">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium text-muted-foreground">Period:</span>
+            <div className="flex rounded-lg border bg-background p-1">
+              <button
+                onClick={() => setTimeframe('day')}
+                className={`flex items-center px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  timeframe === 'day' 
+                    ? 'bg-primary text-primary-foreground shadow-sm' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Clock className="w-3 h-3 mr-1" />
+                Day
+              </button>
+              <button
+                onClick={() => setTimeframe('month')}
+                className={`flex items-center px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  timeframe === 'month' 
+                    ? 'bg-primary text-primary-foreground shadow-sm' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <CalendarDays className="w-3 h-3 mr-1" />
+                Month
+              </button>
+              <button
+                onClick={() => setTimeframe('total')}
+                className={`flex items-center px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  timeframe === 'total' 
+                    ? 'bg-primary text-primary-foreground shadow-sm' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Calendar className="w-3 h-3 mr-1" />
+                All Time
+              </button>
+            </div>
+          </div>
+
+          {/* Date Picker */}
+          {timeframe !== 'total' && (
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium text-muted-foreground">
+                {timeframe === 'day' ? 'Date:' : 'Month:'}
+              </span>
+              <input
+                type={timeframe === 'day' ? 'date' : 'month'}
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="px-3 py-1.5 text-xs border rounded-md bg-background"
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Overall Statistics */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Input Tokens</CardTitle>
@@ -189,35 +260,22 @@ const TokenUsagePage = () => {
           </CardContent>
         </Card>
 
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Chat Embeddings</CardTitle>
-            <MessageSquare className="h-4 w-4 text-indigo-600" />
+            <CardTitle className="text-sm font-medium">Total Consumption</CardTitle>
+            <DollarSign className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-indigo-600">
-              {overallStats.totalChatEmbeddings.toLocaleString()}
+            <div className="text-2xl font-bold text-red-600">
+              {formatCurrency(overallStats.totalConsumptionCost || (overallStats.totalCost + overallStats.totalEmbeddingCost))}
             </div>
             <p className="text-xs text-muted-foreground">
-              Query embeddings generated
+              AI + Embedding costs
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Source Embeddings</CardTitle>
-            <Database className="h-4 w-4 text-gray-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-600">
-              {overallStats.totalSourceEmbeddings.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              RAG source embeddings
-            </p>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Per-User Usage Table */}
@@ -240,6 +298,7 @@ const TokenUsagePage = () => {
                   <th className="text-left p-3">Total Tokens</th>
                   <th className="text-left p-3">AI Cost</th>
                   <th className="text-left p-3">Embedding Cost</th>
+                  <th className="text-left p-3">Total Cost</th>
                   <th className="text-left p-3">Messages</th>
                   <th className="text-left p-3">Avg Tokens/Msg</th>
                 </tr>
@@ -313,6 +372,19 @@ const TokenUsagePage = () => {
                           'text-gray-600'
                         }`}>
                           {formatCurrency(user.embeddingCost || 0)}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      <div className="flex items-center">
+                        <DollarSign className="w-4 h-4 mr-2 text-red-600" />
+                        <span className={`font-bold text-lg ${
+                          user.totalConsumptionCost > 10 ? 'text-red-600' : 
+                          user.totalConsumptionCost > 5 ? 'text-orange-600' : 
+                          user.totalConsumptionCost > 1 ? 'text-yellow-600' : 
+                          'text-green-600'
+                        }`}>
+                          {formatCurrency(user.totalConsumptionCost || (user.totalCost + (user.embeddingCost || 0)))}
                         </span>
                       </div>
                     </td>

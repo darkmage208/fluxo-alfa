@@ -528,6 +528,7 @@ export class AdminService {
       totalTokens: number;
       totalCost: number;
       embeddingCost: number;
+      totalConsumptionCost: number;
       messageCount: number;
       avgTokensPerMessage: number;
     }>;
@@ -574,6 +575,9 @@ export class AdminService {
         const embeddingTokens = Number(user.embedding_tokens);
         const totalTokens = inputTokens + outputTokens + embeddingTokens;
         const messageCount = Number(user.message_count);
+        const aiCost = Number(user.total_cost);
+        const embeddingCost = Number(user.embedding_cost);
+        const totalConsumptionCost = aiCost + embeddingCost;
 
         return {
           userId: user.user_id,
@@ -583,8 +587,9 @@ export class AdminService {
           outputTokens,
           embeddingTokens,
           totalTokens,
-          totalCost: Number(user.total_cost),
-          embeddingCost: Number(user.embedding_cost),
+          totalCost: aiCost,
+          embeddingCost,
+          totalConsumptionCost,
           messageCount,
           avgTokensPerMessage: messageCount > 0 ? Math.round(totalTokens / messageCount) : 0,
         };
@@ -593,6 +598,275 @@ export class AdminService {
       return { users, total: totalUsersCount };
     } catch (error) {
       logger.error('Get user token usage error:', error);
+      throw error;
+    }
+  }
+
+  // Time-based analytics
+  async getTokenUsageByTimeframe(
+    timeframe: 'total' | 'month' | 'day' = 'total',
+    startDate?: string,
+    endDate?: string
+  ): Promise<{
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    totalEmbeddingTokens: number;
+    totalTokens: number;
+    totalCost: number;
+    totalEmbeddingCost: number;
+    totalConsumptionCost: number;
+    messageCount: number;
+    period: string;
+  }> {
+    try {
+      let whereClause = {};
+      let periodLabel = 'All Time';
+
+      if (timeframe === 'day' && startDate) {
+        const selectedDate = new Date(startDate);
+        const startOfDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+        const endOfDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate() + 1);
+        whereClause = { createdAt: { gte: startOfDay, lt: endOfDay } };
+        periodLabel = startOfDay.toLocaleDateString();
+      } else if (timeframe === 'month' && startDate) {
+        const selectedDate = new Date(startDate);
+        const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+        const endOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1);
+        whereClause = { createdAt: { gte: startOfMonth, lt: endOfMonth } };
+        periodLabel = startOfMonth.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+      } else if (startDate && endDate) {
+        // Custom date range
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999); // Include the entire end day
+        whereClause = { createdAt: { gte: start, lte: end } };
+        periodLabel = `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
+      } else if (timeframe === 'day') {
+        // Default to today if no date specified
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        whereClause = { createdAt: { gte: startOfDay, lt: endOfDay } };
+        periodLabel = startOfDay.toLocaleDateString();
+      } else if (timeframe === 'month') {
+        // Default to current month if no date specified
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        whereClause = { createdAt: { gte: startOfMonth, lt: endOfMonth } };
+        periodLabel = startOfMonth.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+      }
+
+      const [tokenResults, costResult, embeddingResults] = await Promise.all([
+        prisma.chatMessage.aggregate({
+          where: whereClause,
+          _sum: { tokensInput: true, tokensOutput: true, tokensEmbedding: true },
+          _count: { id: true }
+        }),
+        prisma.chatMessage.aggregate({
+          where: whereClause,
+          _sum: { costUsd: true, embeddingCostUsd: true },
+        }),
+        prisma.chatMessage.count({ where: whereClause }),
+      ]);
+
+      const totalInputTokens = tokenResults._sum.tokensInput || 0;
+      const totalOutputTokens = tokenResults._sum.tokensOutput || 0;
+      const totalEmbeddingTokens = tokenResults._sum.tokensEmbedding || 0;
+      const totalTokens = totalInputTokens + totalOutputTokens + totalEmbeddingTokens;
+      const totalCost = Number(costResult._sum.costUsd) || 0;
+      const totalEmbeddingCost = Number(costResult._sum.embeddingCostUsd) || 0;
+      const totalConsumptionCost = totalCost + totalEmbeddingCost;
+      const messageCount = tokenResults._count.id || 0;
+
+      return {
+        totalInputTokens,
+        totalOutputTokens,
+        totalEmbeddingTokens,
+        totalTokens,
+        totalCost,
+        totalEmbeddingCost,
+        totalConsumptionCost,
+        messageCount,
+        period: periodLabel,
+      };
+    } catch (error) {
+      logger.error('Get token usage by timeframe error:', error);
+      throw error;
+    }
+  }
+
+  async getUserTokenUsageByTimeframe(
+    timeframe: 'total' | 'month' | 'day' = 'total',
+    page = 1, 
+    limit = 50,
+    startDate?: string,
+    endDate?: string
+  ): Promise<{
+    users: Array<{
+      userId: string;
+      email: string;
+      role: string;
+      inputTokens: number;
+      outputTokens: number;
+      embeddingTokens: number;
+      totalTokens: number;
+      totalCost: number;
+      embeddingCost: number;
+      totalConsumptionCost: number;
+      messageCount: number;
+      avgTokensPerMessage: number;
+    }>;
+    total: number;
+    period: string;
+  }> {
+    try {
+      const skip = (page - 1) * limit;
+      
+      let startFilter: Date | null = null;
+      let endFilter: Date | null = null;
+      let periodLabel = 'All Time';
+
+      if (timeframe === 'day' && startDate) {
+        const selectedDate = new Date(startDate);
+        startFilter = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+        endFilter = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate() + 1);
+        periodLabel = startFilter.toLocaleDateString();
+      } else if (timeframe === 'month' && startDate) {
+        const selectedDate = new Date(startDate);
+        startFilter = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+        endFilter = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1);
+        periodLabel = startFilter.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+      } else if (startDate && endDate) {
+        // Custom date range
+        startFilter = new Date(startDate);
+        endFilter = new Date(endDate);
+        endFilter.setHours(23, 59, 59, 999);
+        periodLabel = `${startFilter.toLocaleDateString()} - ${endFilter.toLocaleDateString()}`;
+      } else if (timeframe === 'day') {
+        // Default to today
+        const now = new Date();
+        startFilter = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        endFilter = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        periodLabel = startFilter.toLocaleDateString();
+      } else if (timeframe === 'month') {
+        // Default to current month
+        const now = new Date();
+        startFilter = new Date(now.getFullYear(), now.getMonth(), 1);
+        endFilter = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        periodLabel = startFilter.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+      }
+
+      // Build the queries based on whether we have date filters
+      let usersWithUsage: Array<{
+        user_id: string;
+        email: string;
+        role: string;
+        input_tokens: bigint;
+        output_tokens: bigint;
+        embedding_tokens: bigint;
+        total_cost: number;
+        embedding_cost: number;
+        message_count: bigint;
+      }>;
+
+      let totalUsersCountResult: Array<{ count: bigint }>;
+
+      if (startFilter && endFilter) {
+        // With date filters
+        usersWithUsage = await prisma.$queryRaw`
+          SELECT 
+            u.id as user_id,
+            u.email,
+            u.role,
+            COALESCE(SUM(cm.tokens_input), 0) as input_tokens,
+            COALESCE(SUM(cm.tokens_output), 0) as output_tokens,
+            COALESCE(SUM(cm.tokens_embedding), 0) as embedding_tokens,
+            COALESCE(SUM(cm.cost_usd), 0) as total_cost,
+            COALESCE(SUM(cm.embedding_cost_usd), 0) as embedding_cost,
+            COUNT(cm.id) as message_count
+          FROM users u
+          LEFT JOIN chat_threads ct ON ct.user_id = u.id
+          LEFT JOIN chat_messages cm ON cm.thread_id = ct.id 
+            AND cm.created_at >= ${startFilter}
+            AND cm.created_at < ${endFilter}
+          GROUP BY u.id, u.email, u.role
+          HAVING COUNT(cm.id) > 0
+          ORDER BY (COALESCE(SUM(cm.cost_usd), 0) + COALESCE(SUM(cm.embedding_cost_usd), 0)) DESC
+          LIMIT ${limit} OFFSET ${skip}
+        `;
+
+        totalUsersCountResult = await prisma.$queryRaw`
+          SELECT COUNT(DISTINCT u.id) as count
+          FROM users u
+          LEFT JOIN chat_threads ct ON ct.user_id = u.id
+          LEFT JOIN chat_messages cm ON cm.thread_id = ct.id 
+            AND cm.created_at >= ${startFilter}
+            AND cm.created_at < ${endFilter}
+          WHERE cm.id IS NOT NULL
+        `;
+      } else {
+        // Without date filters (total)
+        usersWithUsage = await prisma.$queryRaw`
+          SELECT 
+            u.id as user_id,
+            u.email,
+            u.role,
+            COALESCE(SUM(cm.tokens_input), 0) as input_tokens,
+            COALESCE(SUM(cm.tokens_output), 0) as output_tokens,
+            COALESCE(SUM(cm.tokens_embedding), 0) as embedding_tokens,
+            COALESCE(SUM(cm.cost_usd), 0) as total_cost,
+            COALESCE(SUM(cm.embedding_cost_usd), 0) as embedding_cost,
+            COUNT(cm.id) as message_count
+          FROM users u
+          LEFT JOIN chat_threads ct ON ct.user_id = u.id
+          LEFT JOIN chat_messages cm ON cm.thread_id = ct.id
+          GROUP BY u.id, u.email, u.role
+          HAVING COUNT(cm.id) > 0
+          ORDER BY (COALESCE(SUM(cm.cost_usd), 0) + COALESCE(SUM(cm.embedding_cost_usd), 0)) DESC
+          LIMIT ${limit} OFFSET ${skip}
+        `;
+
+        totalUsersCountResult = await prisma.$queryRaw`
+          SELECT COUNT(DISTINCT u.id) as count
+          FROM users u
+          LEFT JOIN chat_threads ct ON ct.user_id = u.id
+          LEFT JOIN chat_messages cm ON cm.thread_id = ct.id
+          WHERE cm.id IS NOT NULL
+        `;
+      }
+
+      const totalUsersCount = Number(totalUsersCountResult[0]?.count || 0);
+
+      const users = usersWithUsage.map(user => {
+        const inputTokens = Number(user.input_tokens);
+        const outputTokens = Number(user.output_tokens);
+        const embeddingTokens = Number(user.embedding_tokens);
+        const totalTokens = inputTokens + outputTokens + embeddingTokens;
+        const messageCount = Number(user.message_count);
+        const aiCost = Number(user.total_cost);
+        const embeddingCost = Number(user.embedding_cost);
+        const totalConsumptionCost = aiCost + embeddingCost;
+
+        return {
+          userId: user.user_id,
+          email: user.email,
+          role: user.role,
+          inputTokens,
+          outputTokens,
+          embeddingTokens,
+          totalTokens,
+          totalCost: aiCost,
+          embeddingCost,
+          totalConsumptionCost,
+          messageCount,
+          avgTokensPerMessage: messageCount > 0 ? Math.round(totalTokens / messageCount) : 0,
+        };
+      });
+
+      return { users, total: totalUsersCount, period: periodLabel };
+    } catch (error) {
+      logger.error('Get user token usage by timeframe error:', error);
       throw error;
     }
   }

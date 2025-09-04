@@ -113,6 +113,20 @@ export const adminApiService = {
     });
     return response.data;
   },
+
+  getTokenUsageByTimeframe: async (timeframe: 'total' | 'month' | 'day', startDate?: string, endDate?: string) => {
+    const response = await adminApi.get(`/usage/timeframe/${timeframe}`, {
+      params: { startDate, endDate },
+    });
+    return response.data.data;
+  },
+
+  getUserTokenUsageByTimeframe: async (timeframe: 'total' | 'month' | 'day', page = 1, limit = 50, startDate?: string, endDate?: string) => {
+    const response = await adminApi.get(`/usage/users/${timeframe}`, {
+      params: { page, limit, startDate, endDate },
+    });
+    return response.data;
+  },
 };
 
 export default adminApi;

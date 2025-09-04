@@ -12,7 +12,18 @@ export class OpenAIService {
       apiKey: env.OPENAI_API_KEY,
     });
     
-    this.pricing = env.PRICING_JSON;
+    // Use accurate OpenAI pricing as of 2024
+    this.pricing = {
+      inference_model: {
+        // GPT-4o pricing (per 1k tokens)
+        input_per_1k: 0.0025,   // $2.50 per 1M input tokens
+        output_per_1k: 0.01     // $10.00 per 1M output tokens
+      },
+      embedding_model: {
+        // text-embedding-3-small pricing (per 1k tokens)
+        per_1k: 0.00002        // $0.02 per 1M tokens
+      }
+    };
   }
 
   async generateEmbedding(text: string): Promise<number[]> {
@@ -54,33 +65,44 @@ export class OpenAIService {
         stream: true,
         max_tokens: 4096,
         temperature: 0.7,
+        stream_options: { include_usage: true }
       });
 
       let fullResponse = '';
       let tokensInput = 0;
       let tokensOutput = 0;
 
-      // Calculate input tokens
-      const inputText = allMessages.map(m => m.content).join(' ');
-      tokensInput = calculateTokens(inputText);
-
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content || '';
         if (content) {
           fullResponse += content;
-          tokensOutput = calculateTokens(fullResponse);
           
           yield {
             content,
             fullResponse,
-            tokensInput,
-            tokensOutput,
+            tokensInput: 0,
+            tokensOutput: 0,
             finished: false
           };
         }
+
+        // Get actual token usage from the final chunk
+        if (chunk.usage) {
+          tokensInput = chunk.usage.prompt_tokens;
+          tokensOutput = chunk.usage.completion_tokens;
+        }
       }
 
-      // Calculate costs
+      // Fallback to estimation if OpenAI doesn't provide usage
+      if (!tokensInput) {
+        const inputText = allMessages.map(m => m.content).join(' ');
+        tokensInput = calculateTokens(inputText);
+      }
+      if (!tokensOutput) {
+        tokensOutput = calculateTokens(fullResponse);
+      }
+
+      // Calculate costs with accurate pricing
       const inputCost = (tokensInput / 1000) * this.pricing.inference_model.input_per_1k;
       const outputCost = (tokensOutput / 1000) * this.pricing.inference_model.output_per_1k;
       const totalCost = inputCost + outputCost;
