@@ -279,24 +279,34 @@ export class ChatService {
   }
 
   private async updateDailyUsage(userId: string): Promise<void> {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     
     await prisma.dailyUsage.upsert({
       where: {
         userId_date: {
           userId,
-          date: new Date(today),
+          date: today,
         },
       },
       update: {
         chatsCount: {
           increment: 1,
         },
+        messagesCount: {
+          increment: 2, // One user message + one assistant message
+        },
       },
       create: {
         userId,
-        date: new Date(today),
+        date: today,
         chatsCount: 1,
+        messagesCount: 2,
+        tokensInput: 0,
+        tokensOutput: 0,
+        tokensEmbedding: 0,
+        costUsd: 0,
+        embeddingCostUsd: 0,
       },
     });
   }
