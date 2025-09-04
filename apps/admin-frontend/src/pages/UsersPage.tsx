@@ -9,6 +9,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { adminApiService } from '@/lib/admin-api';
 import { formatDate } from '@/lib/utils';
@@ -35,6 +46,11 @@ const UsersPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [confirmAction, setConfirmAction] = useState<{
+    type: 'delete' | 'passwordReset' | null;
+    user: any;
+    isOpen: boolean;
+  }>({ type: null, user: null, isOpen: false });
   const { toast } = useToast();
 
   // Debounce search term
@@ -108,11 +124,10 @@ const UsersPage = () => {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
-    
     try {
       await adminApiService.deleteUser(userId);
       await loadUsers();
+      setConfirmAction({ type: null, user: null, isOpen: false });
       toast({
         title: "User deleted",
         description: "User has been permanently removed",
@@ -127,10 +142,9 @@ const UsersPage = () => {
   };
 
   const handlePasswordReset = async (userId: string) => {
-    if (!confirm('Send password reset email to this user?')) return;
-    
     try {
       await adminApiService.requestUserPasswordReset(userId);
+      setConfirmAction({ type: null, user: null, isOpen: false });
       toast({
         title: "Password reset initiated",
         description: "Password reset email has been sent to the user",
@@ -252,7 +266,7 @@ const UsersPage = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-auto max-h-[600px]">
+          <div className="overflow-x-auto">
             <table className="w-full table-auto">
               <thead>
                 <tr className="border-b">
@@ -303,7 +317,7 @@ const UsersPage = () => {
                     <td className="p-2">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
+                          <Button variant="outline" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
                             <span className="sr-only">Open menu</span>
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
@@ -325,13 +339,13 @@ const UsersPage = () => {
                             {user.role === 'admin' ? 'Make User' : 'Make Admin'}
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handlePasswordReset(user.id)}
+                            onClick={() => setConfirmAction({ type: 'passwordReset', user, isOpen: true })}
                           >
                             <KeyRound className="mr-2 h-4 w-4" />
                             Reset Password
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleDeleteUser(user.id)}
+                            onClick={() => setConfirmAction({ type: 'delete', user, isOpen: true })}
                             className="text-red-600 focus:text-red-600"
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
@@ -453,6 +467,45 @@ const UsersPage = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={confirmAction.isOpen} onOpenChange={(open) => !open && setConfirmAction({ type: null, user: null, isOpen: false })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction.type === 'delete' ? 'Delete User' : 'Reset Password'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction.type === 'delete' ? (
+                <>
+                  Are you sure you want to delete <strong>{confirmAction.user?.email}</strong>? 
+                  This action cannot be undone and will permanently remove the user and all their data.
+                </>
+              ) : (
+                <>
+                  Are you sure you want to send a password reset email to <strong>{confirmAction.user?.email}</strong>?
+                  They will receive an email with instructions to reset their password.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={confirmAction.type === 'delete' ? 'bg-red-600 hover:bg-red-700' : ''}
+              onClick={() => {
+                if (confirmAction.type === 'delete') {
+                  handleDeleteUser(confirmAction.user?.id);
+                } else if (confirmAction.type === 'passwordReset') {
+                  handlePasswordReset(confirmAction.user?.id);
+                }
+              }}
+            >
+              {confirmAction.type === 'delete' ? 'Delete User' : 'Send Reset Email'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

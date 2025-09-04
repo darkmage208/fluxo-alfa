@@ -309,11 +309,11 @@ export class AuthService {
   }
 
   private async generateTokens(userId: string) {
-    // Generate access token (15 minutes)
+    // Generate access token (24 hours)
     const accessToken = jwt.sign(
       { userId, type: 'access' },
       this.JWT_SECRET,
-      { expiresIn: '15m' }
+      { expiresIn: '24h' }
     );
 
     // Generate refresh token (7 days)

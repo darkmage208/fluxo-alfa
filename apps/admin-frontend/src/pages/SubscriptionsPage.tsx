@@ -89,6 +89,9 @@ const SubscriptionsPage = () => {
   const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   
+  // Active tab state
+  const [activeTab, setActiveTab] = useState('subscriptions');
+  
   const { toast } = useToast();
 
   useEffect(() => {
@@ -330,7 +333,7 @@ const SubscriptionsPage = () => {
       </div>
 
       {/* Tabbed Interface */}
-      <Tabs defaultValue="subscriptions" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="subscriptions">Subscription Status</TabsTrigger>
           <TabsTrigger value="payments">Payment History</TabsTrigger>
