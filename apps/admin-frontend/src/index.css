@@ -70,7 +70,12 @@
   * {
     @apply border-border;
   }
-  body {
+  html, body {
     @apply bg-background text-foreground;
+    height: 100%;
+    overflow: hidden;
+  }
+  #root {
+    height: 100%;
   }
 }

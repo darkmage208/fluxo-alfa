@@ -167,54 +167,55 @@ const UsersPage = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold flex items-center">
-          <Users className="w-8 h-8 mr-3" />
-          Users Management
+    <div className="space-y-4 lg:space-y-6">
+      <div className="space-y-2">
+        <h1 className="text-2xl lg:text-3xl font-bold flex items-center">
+          <Users className="w-6 h-6 lg:w-8 lg:h-8 mr-2 lg:mr-3" />
+          <span className="hidden sm:inline">Users Management</span>
+          <span className="sm:hidden">Users</span>
         </h1>
-        <p className="text-muted-foreground mt-2">
+        <p className="text-muted-foreground text-sm lg:text-base">
           Manage user accounts and permissions
         </p>
       </div>
 
       {/* User Statistics */}
       {metrics && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs sm:text-sm font-medium">Total Users</CardTitle>
+              <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{metrics.totalUsers}</div>
+              <div className="text-lg sm:text-2xl font-bold">{metrics.totalUsers}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-              <UserCheck className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs sm:text-sm font-medium">Active Users</CardTitle>
+              <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{metrics.activeUsers}</div>
+              <div className="text-lg sm:text-2xl font-bold">{metrics.activeUsers}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Free Plan Users</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs sm:text-sm font-medium">Free Plan</CardTitle>
+              <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{metrics.freeUsers}</div>
+              <div className="text-lg sm:text-2xl font-bold">{metrics.freeUsers}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pro Plan Users</CardTitle>
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs sm:text-sm font-medium">Pro Plan</CardTitle>
+              <CreditCard className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{metrics.proUsers}</div>
+              <div className="text-lg sm:text-2xl font-bold">{metrics.proUsers}</div>
             </CardContent>
           </Card>
         </div>
@@ -222,19 +223,19 @@ const UsersPage = () => {
 
       {/* Search and Controls */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            <div className="flex items-center space-x-2 flex-1">
-              <Search className="w-4 h-4 text-gray-400" />
+        <CardContent className="pt-4 lg:pt-6">
+          <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 items-start lg:items-center justify-between">
+            <div className="flex items-center space-x-2 w-full lg:flex-1">
+              <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <Input
                 placeholder="Search users by email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="max-w-sm"
+                className="w-full lg:max-w-sm"
               />
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">Show:</span>
+            <div className="flex items-center space-x-2 w-full lg:w-auto justify-between lg:justify-start">
+              <span className="text-xs lg:text-sm text-gray-600 whitespace-nowrap">Show:</span>
               <Select 
                 value={pageSize.toString()} 
                 onValueChange={(value) => {
@@ -242,7 +243,7 @@ const UsersPage = () => {
                   setCurrentPage(1);
                 }}
               >
-                <SelectTrigger className="w-20">
+                <SelectTrigger className="w-16 lg:w-20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -251,7 +252,7 @@ const UsersPage = () => {
                   <SelectItem value="50">50</SelectItem>
                 </SelectContent>
               </Select>
-              <span className="text-sm text-gray-600">per page</span>
+              <span className="text-xs lg:text-sm text-gray-600 whitespace-nowrap">per page</span>
             </div>
           </div>
         </CardContent>
@@ -260,34 +261,126 @@ const UsersPage = () => {
       {/* Users Table */}
       <Card>
         <CardHeader>
-          <CardTitle>
+          <CardTitle className="text-lg lg:text-xl">
             Users ({totalUsers.toLocaleString()} total)
-            {debouncedSearchTerm && ` - showing search results for "${debouncedSearchTerm}"`}
+            {debouncedSearchTerm && (
+              <span className="block lg:inline text-sm font-normal text-muted-foreground mt-1 lg:mt-0">
+                {" "}showing search results for "{debouncedSearchTerm}"
+              </span>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          {/* Mobile Card Layout */}
+          <div className="block lg:hidden">
+            {users.map((user: any) => (
+              <div key={user.id} className="border-b border-gray-200 p-4 hover:bg-gray-50">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium text-sm">{user.email}</div>
+                      <div className="text-xs text-gray-500">ID: {user.id.slice(0, 8)}...</div>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => handleToggleActive(user.id, user.isActive)}
+                        >
+                          {user.isActive ? (
+                            <><UserX className="mr-2 h-4 w-4" />Deactivate</>
+                          ) : (
+                            <><UserCheck className="mr-2 h-4 w-4" />Activate</>
+                          )}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleRoleChange(user.id, user.role)}
+                        >
+                          <Shield className="mr-2 h-4 w-4" />
+                          {user.role === 'admin' ? 'Make User' : 'Make Admin'}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setConfirmAction({ type: 'passwordReset', user, isOpen: true })}
+                        >
+                          <KeyRound className="mr-2 h-4 w-4" />
+                          Reset Password
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setConfirmAction({ type: 'delete', user, isOpen: true })}
+                          className="text-red-600 focus:text-red-600"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete User
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-gray-500">Role:</span>
+                      <span className={`ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {user.role === 'admin' && <Shield className="w-3 h-3 mr-1" />}
+                        {user.role}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Plan:</span>
+                      <span className={`ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        user.subscription?.planId === 'pro' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {user.subscription?.planId === 'pro' ? <CreditCard className="w-3 h-3 mr-1" /> : <Users className="w-3 h-3 mr-1" />}
+                        {user.subscription?.planId || 'free'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Status:</span>
+                      <span className={`ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {user.isActive ? <UserCheck className="w-3 h-3 mr-1" /> : <UserX className="w-3 h-3 mr-1" />}
+                        {user.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Created:</span>
+                      <span className="ml-2 text-gray-900">{formatDate(user.createdAt)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table Layout */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full table-auto">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-2">User</th>
-                  <th className="text-left p-2">Role</th>
-                  <th className="text-left p-2">Plan</th>
-                  <th className="text-left p-2">Status</th>
-                  <th className="text-left p-2">Created</th>
-                  <th className="text-left p-2">Actions</th>
+                  <th className="text-left p-3">User</th>
+                  <th className="text-left p-3">Role</th>
+                  <th className="text-left p-3">Plan</th>
+                  <th className="text-left p-3">Status</th>
+                  <th className="text-left p-3">Created</th>
+                  <th className="text-left p-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map((user: any) => (
                   <tr key={user.id} className="border-b hover:bg-gray-50">
-                    <td className="p-2">
+                    <td className="p-3">
                       <div>
                         <div className="font-medium">{user.email}</div>
                         <div className="text-sm text-gray-500">ID: {user.id.slice(0, 8)}...</div>
                       </div>
                     </td>
-                    <td className="p-2">
+                    <td className="p-3">
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                         user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
                       }`}>
@@ -295,7 +388,7 @@ const UsersPage = () => {
                         {user.role}
                       </span>
                     </td>
-                    <td className="p-2">
+                    <td className="p-3">
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                         user.subscription?.planId === 'pro' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-800'
                       }`}>
@@ -303,7 +396,7 @@ const UsersPage = () => {
                         {user.subscription?.planId || 'free'}
                       </span>
                     </td>
-                    <td className="p-2">
+                    <td className="p-3">
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                         user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}>
@@ -314,7 +407,7 @@ const UsersPage = () => {
                     <td className="p-2 text-sm text-gray-500">
                       {formatDate(user.createdAt)}
                     </td>
-                    <td className="p-2">
+                    <td className="p-3">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="outline" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
@@ -358,32 +451,33 @@ const UsersPage = () => {
                 ))}
               </tbody>
             </table>
-            
-            {users.length === 0 && !isLoading && (
-              <div className="text-center py-8 text-gray-500">
-                {debouncedSearchTerm ? `No users found matching "${debouncedSearchTerm}"` : 'No users found'}
-              </div>
-            )}
           </div>
+            
+          {users.length === 0 && !isLoading && (
+            <div className="text-center py-8 text-gray-500">
+              {debouncedSearchTerm ? `No users found matching "${debouncedSearchTerm}"` : 'No users found'}
+            </div>
+          )}
           
           {/* Pagination */}
           {totalUsers > 0 && (
-            <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
-              <div className="flex items-center text-sm text-gray-600">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 lg:gap-0 px-4 lg:px-6 py-3 lg:py-4 border-t bg-gray-50">
+              <div className="flex items-center text-xs lg:text-sm text-gray-600 order-2 lg:order-1">
                 Showing {Math.min((currentPage - 1) * pageSize + 1, totalUsers)} to {Math.min(currentPage * pageSize, totalUsers)} of {totalUsers.toLocaleString()} users
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1 lg:space-x-2 order-1 lg:order-2 w-full lg:w-auto justify-center lg:justify-end">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage(currentPage - 1)}
                   disabled={currentPage <= 1 || isLoading}
+                  className="px-2 lg:px-3 h-8"
                 >
-                  <ChevronLeft className="w-4 h-4 mr-1" />
-                  Previous
+                  <ChevronLeft className="w-3 h-3 lg:w-4 lg:h-4 mr-0 lg:mr-1" />
+                  <span className="hidden sm:inline">Previous</span>
                 </Button>
                 
-                <div className="flex items-center space-x-1">
+                <div className="flex items-center space-x-1 mx-2 lg:mx-0">
                   {(() => {
                     const totalPages = Math.ceil(totalUsers / pageSize);
                     const pages = [];
@@ -396,7 +490,7 @@ const UsersPage = () => {
                         size="sm"
                         onClick={() => setCurrentPage(1)}
                         disabled={isLoading}
-                        className="w-8 h-8 p-0"
+                        className="w-6 h-6 lg:w-8 lg:h-8 p-0 text-xs lg:text-sm"
                       >
                         1
                       </Button>
@@ -420,7 +514,7 @@ const UsersPage = () => {
                             size="sm"
                             onClick={() => setCurrentPage(i)}
                             disabled={isLoading}
-                            className="w-8 h-8 p-0"
+                            className="w-6 h-6 lg:w-8 lg:h-8 p-0 text-xs lg:text-sm"
                           >
                             {i}
                           </Button>
@@ -442,7 +536,7 @@ const UsersPage = () => {
                           size="sm"
                           onClick={() => setCurrentPage(totalPages)}
                           disabled={isLoading}
-                          className="w-8 h-8 p-0"
+                          className="w-6 h-6 lg:w-8 lg:h-8 p-0 text-xs lg:text-sm"
                         >
                           {totalPages}
                         </Button>
@@ -458,9 +552,10 @@ const UsersPage = () => {
                   size="sm"
                   onClick={() => setCurrentPage(currentPage + 1)}
                   disabled={currentPage >= Math.ceil(totalUsers / pageSize) || isLoading}
+                  className="px-2 lg:px-3 h-8"
                 >
-                  Next
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                  <span className="hidden sm:inline">Next</span>
+                  <ChevronRight className="w-3 h-3 lg:w-4 lg:h-4 ml-0 lg:ml-1" />
                 </Button>
               </div>
             </div>
