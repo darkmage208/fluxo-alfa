@@ -1,5 +1,6 @@
 import { prisma } from '../config/database';
 import { RAGService } from './ragService';
+import { AnalyticsService } from './analyticsService';
 import logger from '../config/logger';
 import { 
   NotFoundError, 
@@ -19,81 +20,65 @@ import type {
 
 export class AdminService {
   private ragService: RAGService;
+  private analyticsService: AnalyticsService;
 
   constructor() {
     this.ragService = new RAGService();
+    this.analyticsService = new AnalyticsService();
   }
 
   async getOverviewMetrics(): Promise<AdminMetrics> {
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const [
-        totalUsers,
-        activeUsers,
-        totalSubscriptions,
-        activeSubscriptions,
-        freeUsers,
-        proUsers,
-        totalChats,
-        totalTokensResult,
-        totalCostResult,
-        dailyActiveUsersResult,
-      ] = await Promise.all([
-        prisma.user.count(),
-        prisma.user.count({ where: { isActive: true } }),
+      // Use optimized analytics service for fast pre-aggregated data
+      const optimizedMetrics = await this.analyticsService.getOptimizedOverviewMetrics();
+      
+      // Get subscription counts (these are still fast queries)
+      const [totalSubscriptions, activeSubscriptions] = await Promise.all([
         prisma.subscription.count(),
         prisma.subscription.count({ where: { status: 'active' } }),
-        prisma.user.count({
-          where: {
-            subscription: {
-              planId: 'free'
-            }
-          }
-        }),
-        prisma.user.count({
-          where: {
-            subscription: {
-              planId: 'pro'
-            }
-          }
-        }),
-        prisma.chatMessage.count(),
-        prisma.chatMessage.aggregate({
-          _sum: { tokensInput: true, tokensOutput: true },
-        }),
-        prisma.chatMessage.aggregate({
-          _sum: { costUsd: true },
-        }),
-        prisma.chatMessage.findMany({
-          where: {
-            createdAt: { gte: today },
-          },
-          distinct: ['threadId'],
-          include: { thread: { select: { userId: true } } },
-        }),
       ]);
 
-      const totalTokens = (totalTokensResult._sum.tokensInput || 0) + (totalTokensResult._sum.tokensOutput || 0);
-      const totalCost = Number(totalCostResult._sum.costUsd) || 0;
-      const dailyActiveUsers = new Set(dailyActiveUsersResult.map(msg => msg.thread.userId)).size;
-
       return {
-        totalUsers,
-        activeUsers,
+        totalUsers: optimizedMetrics.totalUsers,
+        activeUsers: optimizedMetrics.activeUsers,
         totalSubscriptions,
         activeSubscriptions,
-        freeUsers,
-        proUsers,
-        totalChats,
-        totalTokens,
-        totalCost,
-        dailyActiveUsers,
+        freeUsers: optimizedMetrics.freeUsers,
+        proUsers: optimizedMetrics.proUsers,
+        totalChats: optimizedMetrics.totalChats,
+        totalTokens: optimizedMetrics.totalTokens,
+        totalCost: optimizedMetrics.totalCost,
+        dailyActiveUsers: optimizedMetrics.dailyActiveUsers,
       };
     } catch (error) {
       logger.error('Get overview metrics error:', error);
-      throw error;
+      // Fallback to current user counts if analytics service fails
+      try {
+        const [totalUsers, activeUsers, freeUsers, proUsers, totalSubscriptions, activeSubscriptions] = await Promise.all([
+          prisma.user.count(),
+          prisma.user.count({ where: { isActive: true } }),
+          prisma.user.count({ where: { subscription: { planId: 'free' } } }),
+          prisma.user.count({ where: { subscription: { planId: 'pro' } } }),
+          prisma.subscription.count(),
+          prisma.subscription.count({ where: { status: 'active' } }),
+        ]);
+
+        return {
+          totalUsers,
+          activeUsers,
+          totalSubscriptions,
+          activeSubscriptions,
+          freeUsers,
+          proUsers,
+          totalChats: 0,
+          totalTokens: 0,
+          totalCost: 0,
+          dailyActiveUsers: activeUsers,
+        };
+      } catch (fallbackError) {
+        logger.error('Fallback metrics error:', fallbackError);
+        throw error;
+      }
     }
   }
 

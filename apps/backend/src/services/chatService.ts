@@ -1,6 +1,7 @@
 import { prisma } from '../config/database';
 import { OpenAIService } from './openaiService';
 import { RAGService } from './ragService';
+import { AnalyticsService } from './analyticsService';
 import logger from '../config/logger';
 import { 
   NotFoundError, 
@@ -15,10 +16,12 @@ import type { ChatThread, ChatMessage, CreateMessageRequest } from '@fluxo/share
 export class ChatService {
   private openaiService: OpenAIService;
   private ragService: RAGService;
+  private analyticsService: AnalyticsService;
 
   constructor() {
     this.openaiService = new OpenAIService();
     this.ragService = new RAGService();
+    this.analyticsService = new AnalyticsService();
   }
 
   async createThread(userId: string, title?: string): Promise<ChatThread> {
@@ -144,6 +147,17 @@ export class ChatService {
         },
       });
 
+      // Update user analytics for user message (embedding only)
+      await this.analyticsService.updateUserUsageAggregations(userId, {
+        tokensInput: 0,
+        tokensOutput: 0,
+        tokensEmbedding: ragResult.embeddingTokens,
+        costUsd: 0,
+        embeddingCostUsd: Number(ragResult.embeddingCost),
+        createdAt: userMessage.createdAt,
+        isNewThread: previousMessages.length === 0,
+      });
+
       // Update thread title if it's the first message
       if (previousMessages.length === 0) {
         const title = this.generateThreadTitle(request.content);
@@ -177,7 +191,29 @@ export class ChatService {
             },
           });
 
-          // Update daily usage
+          // Update user analytics for assistant message (inference tokens and cost)
+          await this.analyticsService.updateUserUsageAggregations(userId, {
+            tokensInput: chunk.tokensInput,
+            tokensOutput: chunk.tokensOutput,
+            tokensEmbedding: 0,
+            costUsd: Number(chunk.cost),
+            embeddingCostUsd: 0,
+            createdAt: assistantMessage.createdAt,
+            isNewThread: false, // Already counted in user message
+          });
+
+          // Update system analytics
+          await this.analyticsService.updateSystemUsageAggregations({
+            tokensInput: chunk.tokensInput,
+            tokensOutput: chunk.tokensOutput,
+            tokensEmbedding: ragResult.embeddingTokens,
+            costUsd: Number(chunk.cost),
+            embeddingCostUsd: Number(ragResult.embeddingCost),
+            createdAt: assistantMessage.createdAt,
+            isNewThread: previousMessages.length === 0,
+          });
+
+          // Update daily usage (legacy method - can be removed later)
           await this.updateDailyUsage(userId);
 
           yield {
