@@ -95,33 +95,58 @@ const SubscriptionsPage = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    loadData();
-  }, [subscriptionsPage, subscriptionsPageSize, paymentsPage, paymentsPageSize]);
+    loadSubscriptionsData();
+  }, [subscriptionsPage, subscriptionsPageSize]);
 
-  const loadData = async () => {
+  useEffect(() => {
+    loadPaymentsData();
+  }, [paymentsPage, paymentsPageSize]);
+
+  useEffect(() => {
+    loadStatsData();
+  }, []);
+
+  const loadSubscriptionsData = async () => {
     try {
       setIsLoading(true);
-      const [subscriptionsResponse, paymentsResponse, statsResponse] = await Promise.all([
-        adminApiService.getSubscriptions(subscriptionsPage, subscriptionsPageSize),
-        adminApiService.getPayments(paymentsPage, paymentsPageSize),
-        adminApiService.getPaymentStats(),
-      ]);
-      
+      const subscriptionsResponse = await adminApiService.getSubscriptions(subscriptionsPage, subscriptionsPageSize);
       setSubscriptions(subscriptionsResponse.data || []);
       setTotalSubscriptions(subscriptionsResponse.pagination?.total || subscriptionsResponse.data?.length || 0);
-      
-      setPayments(paymentsResponse.data || []);
-      setTotalPayments(paymentsResponse.pagination?.total || paymentsResponse.data?.length || 0);
-      
-      setPaymentStats(statsResponse);
     } catch (error: any) {
       toast({
-        title: "Failed to load data",
+        title: "Failed to load subscriptions",
         description: error.response?.data?.error || "Something went wrong",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadPaymentsData = async () => {
+    try {
+      const paymentsResponse = await adminApiService.getPayments(paymentsPage, paymentsPageSize);
+      setPayments(paymentsResponse.data || []);
+      setTotalPayments(paymentsResponse.pagination?.total || paymentsResponse.data?.length || 0);
+    } catch (error: any) {
+      toast({
+        title: "Failed to load payments",
+        description: error.response?.data?.error || "Something went wrong",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const loadStatsData = async () => {
+    try {
+      const statsResponse = await adminApiService.getPaymentStats();
+      setPaymentStats(statsResponse);
+    } catch (error: any) {
+      toast({
+        title: "Failed to load stats",
+        description: error.response?.data?.error || "Something went wrong",
+        variant: "destructive",
+      });
     }
   };
 
@@ -336,7 +361,7 @@ const SubscriptionsPage = () => {
       </div>
 
       {/* Tabbed Interface */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} defaultValue='subscriptions' onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 h-10 lg:h-12">
           <TabsTrigger value="subscriptions" className="text-xs lg:text-sm px-2 lg:px-4">
             <span className="hidden sm:inline">Subscription Status</span>

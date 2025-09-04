@@ -8,6 +8,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { adminApiService } from '@/lib/admin-api';
 import { formatDate } from '@/lib/utils';
@@ -31,6 +39,8 @@ const SourcesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [newSource, setNewSource] = useState({ title: '', rawText: '', tags: '' });
+  const [selectedSource, setSelectedSource] = useState(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -318,8 +328,8 @@ const SourcesPage = () => {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => {
-                              const details = `Source: ${source.title}\nStatus: ${source.isActive ? 'Active' : 'Inactive'}\nCreated: ${formatDate(source.createdAt)}\nUpdated: ${formatDate(source.updatedAt)}\nContent Length: ${source.rawText?.length || 0} characters\nTags: ${source.tags?.length || 0}`;
-                              alert(details);
+                              setSelectedSource(source);
+                              setDetailDialogOpen(true);
                             }}
                           >
                             <AlertCircle className="mr-2 h-4 w-4" />
@@ -348,6 +358,136 @@ const SourcesPage = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Source Detail Dialog */}
+      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <FileText className="w-5 h-5 mr-2 text-blue-500" />
+              Source Details
+            </DialogTitle>
+            <DialogDescription>
+              Comprehensive information about this knowledge base source
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedSource && (
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">Basic Information</h4>
+                    <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Title:</span>
+                        <p className="text-base font-semibold mt-1">{selectedSource.title}</p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Status:</span>
+                        <div className="mt-1">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                            selectedSource.isActive 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {selectedSource.isActive ? <Eye className="w-4 h-4 mr-2" /> : <EyeOff className="w-4 h-4 mr-2" />}
+                            {selectedSource.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Content Length:</span>
+                        <p className="text-base mt-1">{selectedSource.rawText?.length?.toLocaleString() || 0} characters</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">Timestamps</h4>
+                    <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Created:</span>
+                        <p className="text-base mt-1">{formatDate(selectedSource.createdAt)}</p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Last Updated:</span>
+                        <p className="text-base mt-1">{formatDate(selectedSource.updatedAt)}</p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Source ID:</span>
+                        <p className="text-sm mt-1 font-mono bg-white px-2 py-1 rounded border">
+                          {selectedSource.id}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tags Section */}
+              {selectedSource.tags && selectedSource.tags.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Tags ({selectedSource.tags.length})</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedSource.tags.map((tag: string, index: number) => (
+                      <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Content Preview */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Content Preview</h4>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const content = `Title: ${selectedSource.title}\n\nContent:\n${selectedSource.rawText}\n\nTags: ${selectedSource.tags?.join(', ') || 'None'}`;
+                      navigator.clipboard.writeText(content);
+                      toast({
+                        title: "Content copied",
+                        description: "Full source content copied to clipboard",
+                      });
+                    }}
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Copy Full Content
+                  </Button>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 max-h-64 overflow-y-auto">
+                  <pre className="text-sm whitespace-pre-wrap text-gray-700 font-mono leading-relaxed">
+                    {selectedSource.rawText}
+                  </pre>
+                </div>
+              </div>
+
+              {/* Statistics */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">{selectedSource.rawText?.split(/\s+/).length || 0}</div>
+                  <div className="text-sm text-blue-700 mt-1">Words</div>
+                </div>
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">{selectedSource.rawText?.split('\n').length || 0}</div>
+                  <div className="text-sm text-green-700 mt-1">Lines</div>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <div className="text-2xl font-bold text-purple-600">{selectedSource.tags?.length || 0}</div>
+                  <div className="text-sm text-purple-700 mt-1">Tags</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
