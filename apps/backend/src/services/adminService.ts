@@ -34,6 +34,8 @@ export class AdminService {
         activeUsers,
         totalSubscriptions,
         activeSubscriptions,
+        freeUsers,
+        proUsers,
         totalChats,
         totalTokensResult,
         totalCostResult,
@@ -43,6 +45,20 @@ export class AdminService {
         prisma.user.count({ where: { isActive: true } }),
         prisma.subscription.count(),
         prisma.subscription.count({ where: { status: 'active' } }),
+        prisma.user.count({
+          where: {
+            subscription: {
+              planId: 'free'
+            }
+          }
+        }),
+        prisma.user.count({
+          where: {
+            subscription: {
+              planId: 'pro'
+            }
+          }
+        }),
         prisma.chatMessage.count(),
         prisma.chatMessage.aggregate({
           _sum: { tokensInput: true, tokensOutput: true },
@@ -68,6 +84,8 @@ export class AdminService {
         activeUsers,
         totalSubscriptions,
         activeSubscriptions,
+        freeUsers,
+        proUsers,
         totalChats,
         totalTokens,
         totalCost,
@@ -141,6 +159,35 @@ export class AdminService {
       logger.info(`User deleted: ${userId}`);
     } catch (error) {
       logger.error('Delete user error:', error);
+      throw error;
+    }
+  }
+
+  async requestUserPasswordReset(userId: string): Promise<void> {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        throw new NotFoundError('User not found');
+      }
+
+      // Generate reset token
+      const token = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      await prisma.passwordReset.create({
+        data: {
+          userId: user.id,
+          token,
+          expiresAt,
+        },
+      });
+
+      logger.info(`Password reset requested for user: ${userId} by admin`);
+    } catch (error) {
+      logger.error('Request user password reset error:', error);
       throw error;
     }
   }

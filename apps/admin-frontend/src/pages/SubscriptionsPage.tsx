@@ -26,6 +26,26 @@ const PaymentMethodIcon = ({ method }: { method: string }) => {
       return <div className="w-4 h-4 bg-yellow-400 rounded text-white text-xs flex items-center justify-center font-bold">MP</div>;
     case 'kiwify':
       return <div className="w-4 h-4 bg-green-600 rounded text-white text-xs flex items-center justify-center font-bold">K</div>;
+    case 'credit_card':
+    case 'card':
+      return <CreditCard className="w-4 h-4 text-blue-600" />;
+    case 'pix':
+      return <div className="w-4 h-4 bg-green-500 rounded text-white text-xs flex items-center justify-center font-bold">PIX</div>;
+    case 'boleto':
+    case 'boleto_bancario':
+      return <div className="w-4 h-4 bg-orange-500 rounded text-white text-xs flex items-center justify-center font-bold">B</div>;
+    case 'wallet':
+    case 'digital_wallet':
+      return <div className="w-4 h-4 bg-purple-500 rounded text-white text-xs flex items-center justify-center font-bold">W</div>;
+    case 'bank_debit':
+    case 'debit':
+      return <div className="w-4 h-4 bg-red-500 rounded text-white text-xs flex items-center justify-center font-bold">D</div>;
+    case 'paypal':
+      return <div className="w-4 h-4 bg-blue-800 rounded text-white text-xs flex items-center justify-center font-bold">PP</div>;
+    case 'apple_pay':
+      return <div className="w-4 h-4 bg-black rounded text-white text-xs flex items-center justify-center font-bold">AP</div>;
+    case 'google_pay':
+      return <div className="w-4 h-4 bg-green-700 rounded text-white text-xs flex items-center justify-center font-bold">GP</div>;
     default:
       return <CreditCard className="w-4 h-4 text-gray-500" />;
   }
@@ -326,12 +346,19 @@ const SubscriptionsPage = () => {
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                             payment.type === 'subscription'
                               ? 'bg-blue-100 text-blue-800' 
+                              : payment.type === 'one_time'
+                              ? 'bg-green-100 text-green-800'
                               : payment.type === 'refund'
                               ? 'bg-red-100 text-red-800'
+                              : payment.type === 'chargeback'
+                              ? 'bg-purple-100 text-purple-800'
                               : 'bg-gray-100 text-gray-800'
                           }`}>
                             {payment.type === 'subscription' && <Crown className="w-3 h-3 mr-1" />}
-                            {payment.type.charAt(0).toUpperCase() + payment.type.slice(1)}
+                            {payment.type === 'one_time' && <DollarSign className="w-3 h-3 mr-1" />}
+                            {payment.type === 'refund' && <XCircle className="w-3 h-3 mr-1" />}
+                            {payment.type === 'chargeback' && <AlertCircle className="w-3 h-3 mr-1" />}
+                            {payment.type?.replace('_', ' ').charAt(0).toUpperCase() + payment.type?.replace('_', ' ').slice(1) || 'Unknown'}
                           </span>
                         </td>
                         <td className="p-2 text-sm">

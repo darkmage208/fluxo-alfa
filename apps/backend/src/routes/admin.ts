@@ -85,6 +85,19 @@ router.delete('/users/:id', async (req, res, next) => {
   }
 });
 
+// @route   POST /admin/users/:id/password-reset
+// @desc    Request password reset for user
+// @access  Admin
+router.post('/users/:id/password-reset', async (req, res, next) => {
+  try {
+    const userId = req.params.id;
+    await adminService.requestUserPasswordReset(userId);
+    res.json(createSuccessResponse(null, 'Password reset initiated for user'));
+  } catch (error) {
+    next(error);
+  }
+});
+
 // @route   GET /admin/user/:id/usage
 // @desc    Get user usage statistics
 // @access  Admin

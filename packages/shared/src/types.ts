@@ -143,6 +143,8 @@ export const AdminMetricsSchema = z.object({
   activeUsers: z.number().int().min(0),
   totalSubscriptions: z.number().int().min(0),
   activeSubscriptions: z.number().int().min(0),
+  freeUsers: z.number().int().min(0),
+  proUsers: z.number().int().min(0),
   totalChats: z.number().int().min(0),
   totalTokens: z.number().int().min(0),
   totalCost: z.number().min(0),

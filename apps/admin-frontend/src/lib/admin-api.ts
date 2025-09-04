@@ -43,6 +43,11 @@ export const adminApiService = {
     await adminApi.delete(`/users/${userId}`);
   },
 
+  requestUserPasswordReset: async (userId: string) => {
+    const response = await adminApi.post(`/users/${userId}/password-reset`);
+    return response.data;
+  },
+
   getUserUsage: async (userId: string) => {
     const response = await adminApi.get(`/user/${userId}/usage`);
     return response.data.data;
