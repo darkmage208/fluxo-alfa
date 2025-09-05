@@ -73,10 +73,14 @@ const ChatPage = () => {
       if (error.message.includes('Daily chat limit')) {
         toast({
           title: "Daily limit reached",
-          description: "Upgrade to Pro for unlimited chats",
+          description: "You've reached your daily message limit. Upgrade to Pro for unlimited conversations!",
+          variant: "destructive",
+          duration: 10000,
           action: (
             <Link to="/billing">
-              <Button size="sm">Upgrade</Button>
+              <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                View Billing
+              </Button>
             </Link>
           ),
         });

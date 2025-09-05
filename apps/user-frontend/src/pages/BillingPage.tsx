@@ -29,22 +29,9 @@ const BillingPage = () => {
     }
   };
 
-  const handleUpgrade = async () => {
-    try {
-      const { url } = await billingApi.createCheckoutSession({
-        priceId: import.meta.env.VITE_STRIPE_PRICE_PRO || 'price_pro_placeholder',
-        successUrl: `${window.location.origin}/billing?success=true`,
-        cancelUrl: `${window.location.origin}/billing?canceled=true`,
-      });
-      
-      window.location.href = url;
-    } catch (error: any) {
-      toast({
-        title: "Failed to start checkout",
-        description: error.response?.data?.error || "Something went wrong",
-        variant: "destructive",
-      });
-    }
+  const handleUpgrade = () => {
+    // Redirect to payment page instead of direct checkout
+    window.location.href = '/payment';
   };
 
   const handleManageBilling = async () => {
@@ -174,13 +161,12 @@ const BillingPage = () => {
                       )}
                     </div>
                   ) : (
-                    <Button
-                      onClick={handleUpgrade}
-                      className="w-full"
-                    >
-                      <Crown className="w-4 h-4 mr-2" />
-                      Upgrade to Pro
-                    </Button>
+                    <Link to="/payment">
+                      <Button className="w-full">
+                        <Crown className="w-4 h-4 mr-2" />
+                        Upgrade to Pro
+                      </Button>
+                    </Link>
                   )}
                 </div>
               </div>
@@ -259,15 +245,18 @@ const BillingPage = () => {
                   </div>
                   <div className="pt-4">
                     <div className="text-2xl font-bold">
-                      $9.99
+                      $36
                       <span className="text-sm font-normal text-gray-500">/month</span>
+                      <div className="text-sm text-gray-600">R$197</div>
                     </div>
                   </div>
                   {!isPro && (
-                    <Button onClick={handleUpgrade} className="w-full mt-4">
-                      <Crown className="w-4 h-4 mr-2" />
-                      Upgrade Now
-                    </Button>
+                    <Link to="/payment">
+                      <Button className="w-full mt-4">
+                        <Crown className="w-4 h-4 mr-2" />
+                        Upgrade Now
+                      </Button>
+                    </Link>
                   )}
                 </div>
               </CardContent>

@@ -164,18 +164,29 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 }));
               } else if (parsed.type === 'error') {
                 console.error('Streaming error:', parsed.error);
-                set({ isStreaming: false, streamingMessage: '' });
+                set((state) => ({
+                  messages: state.messages.slice(0, -1), // Remove the user message
+                  isStreaming: false, 
+                  streamingMessage: ''
+                }));
                 throw new Error(parsed.error);
               }
             } catch (e) {
-              // Ignore JSON parse errors for non-JSON lines
+              // Only ignore JSON parse errors, not other errors
+              if (!(e instanceof SyntaxError)) {
+                throw e;
+              }
             }
           }
         }
       }
     } catch (error) {
       console.error('Failed to send message:', error);
-      set({ isStreaming: false, streamingMessage: '' });
+      set((state) => ({
+        messages: state.messages.slice(0, -1), // Remove the user message
+        isStreaming: false,
+        streamingMessage: ''
+      }));
       throw error;
     }
   },

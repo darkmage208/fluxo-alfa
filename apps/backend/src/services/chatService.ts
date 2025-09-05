@@ -267,8 +267,11 @@ export class ChatService {
 
       const todayChats = usage?.chatsCount || 0;
       
-      if (todayChats >= subscription.plan.dailyChatLimit) {
-        throw new SubscriptionError(`Daily chat limit of ${subscription.plan.dailyChatLimit} reached. Upgrade to Pro for unlimited chats.`);
+      // TODO: Remove this temporary testing override - set free plan limit to 1 for testing
+      const testLimit = subscription.planId === 'free' ? 1 : subscription.plan.dailyChatLimit;
+      
+      if (todayChats >= testLimit) {
+        throw new SubscriptionError(`Daily chat limit reached`);
       }
     }
 
