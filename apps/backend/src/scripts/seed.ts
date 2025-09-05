@@ -14,7 +14,7 @@ async function main() {
       update: {},
       create: {
         id: 'free',
-        dailyChatLimit: 10,
+        dailyChatLimit: 0,
         stripePriceId: null,
       },
     });
