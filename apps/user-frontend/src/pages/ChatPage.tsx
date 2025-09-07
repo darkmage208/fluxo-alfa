@@ -53,16 +53,6 @@ const ChatPage = () => {
   }, [loadThreads]);
 
   const handleCreateThread = async () => {
-    // Limit to one new thread at a time - check if user already has threads
-    if (threads.length > 0) {
-      toast({
-        title: "Thread limit reached",
-        description: "You can only have one active conversation at a time. Please delete the existing thread first.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       await createThread();
     } catch (error: any) {
@@ -174,7 +164,7 @@ const ChatPage = () => {
             <Button
               size="sm"
               onClick={handleCreateThread}
-              disabled={isLoading || threads.length > 0}
+              disabled={isLoading}
             >
               <Plus className="w-4 h-4 mr-2" />
               New Chat
@@ -412,7 +402,7 @@ const ChatPage = () => {
               </p>
               <Button
                 onClick={handleCreateThread} 
-                disabled={isLoading || threads.length > 0}
+                disabled={isLoading}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Start New Chat
