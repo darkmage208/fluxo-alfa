@@ -112,6 +112,30 @@ export class ChatService {
     }
   }
 
+  async renameThread(threadId: string, userId: string, title: string): Promise<ChatThread> {
+    try {
+      // Verify thread belongs to user
+      const thread = await prisma.chatThread.findFirst({
+        where: { id: threadId, userId },
+      });
+
+      if (!thread) {
+        throw new NotFoundError('Thread not found');
+      }
+
+      const updatedThread = await prisma.chatThread.update({
+        where: { id: threadId },
+        data: { title },
+      });
+
+      logger.info(`Chat thread renamed: ${threadId} to "${title}"`);
+      return updatedThread;
+    } catch (error) {
+      logger.error('Rename thread error:', error);
+      throw error;
+    }
+  }
+
   async *streamMessage(request: CreateMessageRequest, userId: string) {
     try {
       // Check user's daily usage and plan limits
@@ -267,10 +291,7 @@ export class ChatService {
 
       const todayChats = usage?.chatsCount || 0;
       
-      // TODO: Remove this temporary testing override - set free plan limit to 1 for testing
-      const testLimit = subscription.planId === 'free' ? 1 : subscription.plan.dailyChatLimit;
-      
-      if (todayChats >= testLimit) {
+      if (todayChats >= subscription.plan.dailyChatLimit) {
         throw new SubscriptionError(`Daily chat limit reached`);
       }
     }

@@ -11,7 +11,6 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": false,
-    "skipLibCheck": true,
     "noImplicitAny": false,
     "jsx": "react-jsx",
 

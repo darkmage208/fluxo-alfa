@@ -102,6 +102,22 @@ router.delete('/thread/:id', async (req, res, next) => {
   }
 });
 
+// @route   PATCH /chat/thread/:id
+// @desc    Rename a chat thread
+// @access  Private
+router.patch('/thread/:id', async (req, res, next) => {
+  try {
+    const userId = req.userId!;
+    const threadId = req.params.id;
+    const { title } = req.body;
+
+    const thread = await chatService.renameThread(threadId, userId, title);
+    res.json(createSuccessResponse(thread, 'Thread renamed successfully'));
+  } catch (error) {
+    next(error);
+  }
+});
+
 // @route   POST /chat/message
 // @desc    Send a message and get AI response (SSE stream)
 // @access  Private

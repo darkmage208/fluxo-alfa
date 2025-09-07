@@ -131,6 +131,10 @@ export const chatApi = {
     await api.delete(`/chat/thread/${threadId}`);
   },
 
+  renameThread: async (threadId: string, title: string): Promise<void> => {
+    await api.patch(`/chat/thread/${threadId}`, { title });
+  },
+
   sendMessage: (data: CreateMessageRequest) => {
     return new EventSource(`${API_BASE_URL}/chat/message`, {
       method: 'POST',

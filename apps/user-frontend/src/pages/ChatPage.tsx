@@ -17,11 +17,19 @@ import {
   Bot,
   Settings,
   CreditCard,
-  LogOut
+  LogOut,
+  ChevronDown,
+  Edit3,
+  Check,
+  X
 } from 'lucide-react';
 
 const ChatPage = () => {
   const [messageInput, setMessageInput] = useState('');
+  const [editingThreadId, setEditingThreadId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const { toast } = useToast();
   const { user, logout } = useAuthStore();
   const {
@@ -35,6 +43,7 @@ const ChatPage = () => {
     createThread,
     setCurrentThread,
     deleteThread,
+    renameThread,
     sendMessage,
     clearStreamingMessage,
   } = useChatStore();
@@ -44,6 +53,16 @@ const ChatPage = () => {
   }, [loadThreads]);
 
   const handleCreateThread = async () => {
+    // Limit to one new thread at a time - check if user already has threads
+    if (threads.length > 0) {
+      toast({
+        title: "Thread limit reached",
+        description: "You can only have one active conversation at a time. Please delete the existing thread first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       await createThread();
     } catch (error: any) {
@@ -94,9 +113,43 @@ const ChatPage = () => {
     }
   };
 
+  const handleLogout = async () => {
+    await logout();
+  };
+
+  const handleEditThread = (threadId: string, currentTitle: string) => {
+    setEditingThreadId(threadId);
+    setEditTitle(currentTitle || 'New Chat');
+  };
+
+  const handleSaveTitle = async (threadId: string) => {
+    if (editTitle.trim()) {
+      try {
+        await renameThread(threadId, editTitle.trim());
+        setEditingThreadId(null);
+        toast({
+          title: "Thread renamed",
+          description: "Your conversation title has been updated.",
+        });
+      } catch (error: any) {
+        toast({
+          title: "Failed to rename thread",
+          description: error.response?.data?.error || "Something went wrong",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingThreadId(null);
+    setEditTitle('');
+  };
+
   const handleDeleteThread = async (threadId: string) => {
     try {
       await deleteThread(threadId);
+      setDeleteConfirmId(null);
       toast({
         title: "Thread deleted",
         description: "The conversation has been removed.",
@@ -110,34 +163,22 @@ const ChatPage = () => {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-  };
-
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between">
             <h1 className="text-xl font-semibold">Fluxo Alfa</h1>
             <Button
               size="sm"
               onClick={handleCreateThread}
-              disabled={isLoading}
+              disabled={isLoading || threads.length > 0}
             >
               <Plus className="w-4 h-4 mr-2" />
               New Chat
             </Button>
-          </div>
-          
-          {/* User Info */}
-          <div className="flex items-center justify-between text-sm text-gray-600">
-            <div className="flex items-center">
-              <User className="w-4 h-4 mr-2" />
-              {user?.email}
-            </div>
           </div>
         </div>
 
@@ -161,50 +202,113 @@ const ChatPage = () => {
                   }`}
                   onClick={() => setCurrentThread(thread)}
                 >
-                  <MessageCircle className="w-4 h-4 mr-3 text-gray-400" />
+                  <MessageCircle className="w-4 h-4 mr-3 text-gray-400 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {thread.title || 'New Chat'}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {formatDate(thread.createdAt)}
-                    </p>
+                    {editingThreadId === thread.id ? (
+                      <div className="flex items-center space-x-2">
+                        <Input
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          className="text-sm h-7"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveTitle(thread.id);
+                            if (e.key === 'Escape') handleCancelEdit();
+                          }}
+                          onBlur={() => handleSaveTitle(thread.id)}
+                          autoFocus
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {thread.title || 'New Chat'}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {formatDate(thread.createdAt)}
+                        </p>
+                      </>
+                    )}
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="opacity-0 group-hover:opacity-100 p-1 h-auto"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteThread(thread.id);
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4 text-red-500" />
-                  </Button>
+                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="p-1 h-auto"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditThread(thread.id, thread.title || '');
+                      }}
+                    >
+                      <Edit3 className="w-3 h-3 text-gray-500" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="p-1 h-auto"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteConfirmId(thread.id);
+                      }}
+                    >
+                      <Trash2 className="w-3 h-3 text-red-500" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* Bottom Actions */}
-        <div className="p-4 border-t border-gray-200 space-y-2">
-          <Link to="/billing">
-            <Button variant="outline" size="sm" className="w-full justify-start">
-              <CreditCard className="w-4 h-4 mr-2" />
-              Billing
+        {/* User Dropdown - At Bottom */}
+        <div className="p-4 border-t border-gray-200">
+          <div className="relative">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-between p-2 h-auto"
+              onClick={() => setShowUserDropdown(!showUserDropdown)}
+            >
+              <div className="flex items-center text-sm text-gray-600">
+                <User className="w-4 h-4 mr-2" />
+                {user?.email}
+              </div>
+              <ChevronDown className="w-4 h-4 text-gray-400" />
             </Button>
-          </Link>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full justify-start"
-            onClick={handleLogout}
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign out
-          </Button>
+            
+            {showUserDropdown && (
+              <>
+                <div 
+                  className="fixed inset-0 z-10" 
+                  onClick={() => setShowUserDropdown(false)}
+                />
+                <div className="absolute left-0 bottom-full mb-1 w-56 bg-white rounded-md shadow-lg border z-20">
+                  <div className="py-1">
+                    <Link 
+                      to="/billing" 
+                      className="flex items-center px-4 py-2 text-sm hover:bg-gray-100"
+                      onClick={() => setShowUserDropdown(false)}
+                    >
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Billing & Subscription
+                    </Link>
+                    <hr className="my-1" />
+                    <button
+                      onClick={() => {
+                        setShowUserDropdown(false);
+                        handleLogout();
+                      }}
+                      className="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-100"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign out
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
+
       </div>
 
       {/* Main Chat Area */}
@@ -248,7 +352,7 @@ const ChatPage = () => {
                       ) : (
                         <MarkdownRenderer 
                           content={message.content} 
-                          className={`text-sm ${message.role === 'user' ? 'prose-invert' : ''}`}
+                          className="text-sm"
                         />
                       )}
                       <p className="text-xs mt-2 opacity-70">
@@ -306,7 +410,10 @@ const ChatPage = () => {
               <p className="text-gray-500 mb-4">
                 Start a conversation or select an existing thread
               </p>
-              <Button onClick={handleCreateThread} disabled={isLoading}>
+              <Button
+                onClick={handleCreateThread} 
+                disabled={isLoading || threads.length > 0}
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Start New Chat
               </Button>
@@ -314,6 +421,33 @@ const ChatPage = () => {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h2 className="text-lg font-semibold mb-2">Delete Thread?</h2>
+            <p className="text-gray-600 mb-4">
+              This will permanently delete this conversation and all its messages. 
+              This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setDeleteConfirmId(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => handleDeleteThread(deleteConfirmId)}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Delete Thread
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

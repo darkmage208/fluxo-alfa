@@ -14,6 +14,7 @@ interface ChatState {
   loadMessages: (threadId: string) => Promise<void>;
   setCurrentThread: (thread: ChatThread | null) => void;
   deleteThread: (threadId: string) => Promise<void>;
+  renameThread: (threadId: string, title: string) => Promise<void>;
   sendMessage: (content: string) => Promise<void>;
   clearStreamingMessage: () => void;
 }
@@ -71,6 +72,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
       threads: state.threads.filter((t) => t.id !== threadId),
       currentThread: state.currentThread?.id === threadId ? null : state.currentThread,
       messages: state.currentThread?.id === threadId ? [] : state.messages,
+    }));
+  },
+
+  renameThread: async (threadId: string, title: string) => {
+    await chatApi.renameThread(threadId, title);
+    set((state) => ({
+      threads: state.threads.map((t) => 
+        t.id === threadId ? { ...t, title } : t
+      ),
+      currentThread: state.currentThread?.id === threadId 
+        ? { ...state.currentThread, title } 
+        : state.currentThread,
     }));
   },
 
