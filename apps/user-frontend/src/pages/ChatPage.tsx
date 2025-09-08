@@ -8,6 +8,7 @@ import { useChatStore } from '@/store/chat';
 import { useAuthStore } from '@/store/auth';
 import { formatDate } from '@/lib/utils';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
+import StreamingMarkdownRenderer from '@/components/StreamingMarkdownRenderer';
 import TypingIndicator from '@/components/TypingIndicator';
 import { 
   MessageCircle, 
@@ -373,7 +374,11 @@ const ChatPage = () => {
                     <Card className="bg-white shadow-sm border-gray-200">
                       {streamingMessage ? (
                         <div className="p-3">
-                          <MarkdownRenderer content={streamingMessage} className="text-sm" />
+                          <StreamingMarkdownRenderer 
+                            content={streamingMessage} 
+                            className="text-sm" 
+                            isStreaming={true}
+                          />
                           <span className="inline-block w-1 h-4 bg-gray-400 animate-pulse ml-1"></span>
                         </div>
                       ) : (
