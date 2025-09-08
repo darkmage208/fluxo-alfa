@@ -44,6 +44,7 @@ export const ChatThreadSchema = z.object({
   id: z.string().uuid(),
   userId: z.string().uuid(),
   title: z.string(),
+  summary: z.string().nullable().optional(),
   createdAt: z.date(),
 });
 

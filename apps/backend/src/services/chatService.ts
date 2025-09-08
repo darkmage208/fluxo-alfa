@@ -150,12 +150,15 @@ export class ChatService {
         throw new NotFoundError('Thread not found');
       }
 
-      // Get conversation history
+      // Get conversation history (limit to last 5 messages for AI input)
       const previousMessages = await prisma.chatMessage.findMany({
         where: { threadId: request.threadId },
-        orderBy: { createdAt: 'asc' },
-        take: 20, // Limit context window
+        orderBy: { createdAt: 'desc' },
+        take: 10, // Get last 5 pairs (user + assistant)
       });
+      
+      // Reverse to get chronological order
+      previousMessages.reverse();
 
       // Get RAG context with embedding tracking
       const ragResult = await this.ragService.searchRelevantContext(request.content);
@@ -191,17 +194,31 @@ export class ChatService {
         });
       }
 
-      // Prepare messages for AI
-      const messages = [
-        ...previousMessages.map(m => ({ role: m.role, content: m.content })),
-        { role: 'user', content: request.content }
-      ];
+      // Prepare messages for AI - include thread summary for context
+      const contextMessages = [];
+      
+      // Add thread summary if available
+      if (thread.summary && previousMessages.length > 0) {
+        contextMessages.push({
+          role: 'system',
+          content: `Previous conversation summary: ${thread.summary}`
+        });
+      }
+      
+      // Add recent conversation history (last 5 messages or pairs)
+      const recentMessages = previousMessages.slice(-10).map(m => ({ 
+        role: m.role, 
+        content: m.content 
+      }));
+      
+      contextMessages.push(...recentMessages);
+      contextMessages.push({ role: 'user', content: request.content });
 
       // Stream AI response
       let assistantMessage: ChatMessage | null = null;
       let fullResponse = '';
 
-      for await (const chunk of this.openaiService.streamChatCompletion(messages, ragResult.context)) {
+      for await (const chunk of this.openaiService.streamChatCompletion(contextMessages, ragResult.context)) {
         if (chunk.finished) {
           // Save assistant message with final token counts and cost
           assistantMessage = await prisma.chatMessage.create({
@@ -239,6 +256,9 @@ export class ChatService {
 
           // Update daily usage (legacy method - can be removed later)
           await this.updateDailyUsage(userId);
+
+          // Update thread summary after every new conversation
+          await this.updateThreadSummary(request.threadId, [...previousMessages, userMessage, assistantMessage]);
 
           yield {
             type: 'complete' as const,
@@ -333,6 +353,65 @@ export class ChatService {
         embeddingCostUsd: 0,
       },
     });
+  }
+
+  private async updateThreadSummary(threadId: string, allMessages: ChatMessage[]): Promise<void> {
+    try {
+      // Only update summary if we have at least 4 messages (2 exchanges)
+      if (allMessages.length < 4) {
+        return;
+      }
+
+      // Prepare conversation for summarization
+      const conversationText = allMessages
+        .map(msg => `${msg.role}: ${msg.content}`)
+        .join('\n');
+
+      // Generate summary using OpenAI
+      const summaryPrompt = [
+        {
+          role: 'system',
+          content: 'You are a helpful assistant that creates concise summaries of conversations. Create a summary that captures the main topics, key decisions, and important context from this conversation. Keep it under 200 words and focus on information that would be useful for continuing the conversation later.'
+        },
+        {
+          role: 'user',
+          content: `Please summarize this conversation:\n\n${conversationText}`
+        }
+      ];
+
+      // Generate summary (non-streaming) with cost tracking
+      const summaryResult = await this.openaiService.generateSummary(summaryPrompt);
+
+      // Update thread with new summary
+      await prisma.chatThread.update({
+        where: { id: threadId },
+        data: { summary: summaryResult.summary },
+      });
+
+      // Track summary generation costs in user analytics
+      // Get the thread owner's userId from the thread ID
+      const thread = await prisma.chatThread.findUnique({
+        where: { id: threadId },
+        select: { userId: true }
+      });
+      
+      if (thread?.userId) {
+        await this.analyticsService.updateUserUsageAggregations(thread.userId, {
+          tokensInput: summaryResult.tokensInput,
+          tokensOutput: summaryResult.tokensOutput,
+          tokensEmbedding: 0,
+          costUsd: summaryResult.cost,
+          embeddingCostUsd: 0,
+          createdAt: new Date(),
+          isNewThread: false,
+        });
+      }
+
+      logger.info(`Thread summary updated: ${threadId}`);
+    } catch (error) {
+      logger.error('Update thread summary error:', error);
+      // Don't throw error to avoid breaking the chat flow
+    }
   }
 
   private generateThreadTitle(firstMessage: string): string {
