@@ -67,6 +67,7 @@ export class OpenAIService {
       let tokensInput = 0;
       let tokensOutput = 0;
       let chunkBuffer = '';
+      let sentChunkLength = 0; // Track what we've already sent
 
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content || '';
@@ -80,27 +81,35 @@ export class OpenAIService {
           if (sentences.length > 1) {
             // Send all complete sentences except the last one
             const completeText = sentences.slice(0, -1).join(' ').trim();
-            if (completeText) {
-              yield {
-                content: completeText + ' ',
-                fullResponse,
-                tokensInput: 0,
-                tokensOutput: 0,
-                finished: false,
-                isChunked: true
-              };
+            if (completeText && completeText.length > sentChunkLength) {
+              // Only send the new part that hasn't been sent yet
+              const newContent = completeText.substring(sentChunkLength);
+              if (newContent) {
+                yield {
+                  content: newContent + ' ',
+                  fullResponse,
+                  tokensInput: 0,
+                  tokensOutput: 0,
+                  finished: false,
+                  isChunked: true
+                };
+                sentChunkLength = completeText.length;
+              }
             }
             // Keep the incomplete sentence for the next iteration
             chunkBuffer = sentences[sentences.length - 1] || '';
-          } else {
-            // No complete sentences yet, yield raw content for immediate feedback
+            sentChunkLength = 0; // Reset counter for the new buffer
+          } else if (chunkBuffer.length > sentChunkLength + 30) {
+            // If we have significant new content but no complete sentence, send it for immediate feedback
+            const newContent = chunkBuffer.substring(sentChunkLength);
             yield {
-              content,
+              content: newContent,
               fullResponse,
               tokensInput: 0,
               tokensOutput: 0,
               finished: false
             };
+            sentChunkLength = chunkBuffer.length;
           }
         }
 
@@ -121,14 +130,17 @@ export class OpenAIService {
       }
 
       // Send any remaining content in the buffer
-      if (chunkBuffer.trim()) {
-        yield {
-          content: chunkBuffer,
-          fullResponse,
-          tokensInput: 0,
-          tokensOutput: 0,
-          finished: false
-        };
+      if (chunkBuffer.trim() && chunkBuffer.length > sentChunkLength) {
+        const finalContent = chunkBuffer.substring(sentChunkLength);
+        if (finalContent.trim()) {
+          yield {
+            content: finalContent,
+            fullResponse,
+            tokensInput: 0,
+            tokensOutput: 0,
+            finished: false
+          };
+        }
       }
 
       // Calculate costs with accurate pricing
@@ -248,6 +260,8 @@ Não é um Substituto Profissional: Deixe claro para o usuário que você é uma
 Foco no Escopo: Se o usuário divagar para tópicos que não têm relação com o desenvolvimento masculino, relacionamentos e os pilares do protocolo, redirecione-o gentilmente de volta ao foco: "Entendo. No entanto, nosso foco aqui é construir sua estrutura. Vamos voltar ao que importa para o seu crescimento."
 Não se Apresente: Conforme a instrução original, não inicie cada mensagem com uma apresentação. Vá direto ao conselho ou à execução do protocolo.
 
+5. Use muitos emoticons para expressar suas emoções de forma forte e ampla.
+6. Se a sua resposta for longa, não tente sobrecarregar o usuário respondendo tudo de uma vez. Em vez disso, divida-a em várias partes e responda aos poucos.
 **Todas as respostas devem ser em português (brasileiro).**
 
 `;

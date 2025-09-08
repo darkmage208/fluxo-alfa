@@ -133,21 +133,33 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
 
       let streamingContent = '';
+      let buffer = ''; // Buffer for incomplete lines
 
       while (true) {
         const { done, value } = await reader.read();
         
         if (done) break;
 
-        const chunk = new TextDecoder().decode(value);
-        const lines = chunk.split('\n');
+        // Decode the chunk and add to buffer
+        const chunk = new TextDecoder().decode(value, { stream: true });
+        buffer += chunk;
+
+        // Process complete lines only
+        const lines = buffer.split('\n');
+        
+        // Keep the last incomplete line in the buffer
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
+          // Skip empty lines
+          if (line.trim() === '') continue;
+          
           if (line.startsWith('data: ')) {
-            const data = line.slice(6);
+            const data = line.slice(6).trim();
             
             if (data === '[DONE]') {
-              set({ isStreaming: false });
+              // Final message should already be added, just clean up
+              set({ isStreaming: false, streamingMessage: '' });
               return;
             }
 
@@ -155,26 +167,37 @@ export const useChatStore = create<ChatState>((set, get) => ({
               const parsed = JSON.parse(data);
               
               if (parsed.type === 'chunk') {
-                streamingContent += parsed.content;
+                // Server now sends properly incremental chunks without duplication
+                const newContent = parsed.content || '';
+                if (newContent) {
+                  streamingContent += newContent;
+                  set({ streamingMessage: streamingContent });
+                }
+              } else if (parsed.type === 'message') {
+                // Alternative message type for incremental updates
+                streamingContent += parsed.content || '';
                 set({ streamingMessage: streamingContent });
               } else if (parsed.type === 'complete') {
-                // Add assistant message
+                // Add the complete assistant message
                 const assistantMessage: ChatMessage = {
                   id: parsed.messageId || 'temp-assistant-' + Date.now(),
                   threadId: currentThread.id,
                   role: 'assistant',
-                  content: parsed.content,
-                  tokensInput: 0,
-                  tokensOutput: 0,
-                  costUsd: 0,
+                  content: parsed.content || streamingContent, // Use the final content
+                  tokensInput: parsed.tokensInput || 0,
+                  tokensOutput: parsed.tokensOutput || 0,
+                  costUsd: parsed.costUsd || 0,
                   createdAt: new Date(),
                 };
 
                 set((state) => ({
                   messages: [...state.messages, assistantMessage],
                   isStreaming: false,
-                  streamingMessage: '',
+                  streamingMessage: '', // Clear streaming message when complete
                 }));
+                
+                // Reset accumulator for next message
+                streamingContent = '';
               } else if (parsed.type === 'error') {
                 console.error('Streaming error:', parsed.error);
                 set((state) => ({
@@ -185,12 +208,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 throw new Error(parsed.error);
               }
             } catch (e) {
-              // Only ignore JSON parse errors, not other errors
-              if (!(e instanceof SyntaxError)) {
+              // Log parse errors for debugging but continue
+              if (e instanceof SyntaxError) {
+                console.warn('Failed to parse SSE data:', data, e);
+              } else {
                 throw e;
               }
             }
           }
+        }
+      }
+      
+      // Process any remaining buffer
+      if (buffer.trim() && buffer.startsWith('data: ')) {
+        const data = buffer.slice(6).trim();
+        if (data !== '[DONE]') {
+          console.warn('Incomplete SSE message in buffer:', buffer);
         }
       }
     } catch (error) {

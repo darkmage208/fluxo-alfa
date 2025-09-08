@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { useChatStore } from '@/store/chat';
 import { useAuthStore } from '@/store/auth';
 import { formatDate } from '@/lib/utils';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
+import TypingIndicator from '@/components/TypingIndicator';
 import { 
   MessageCircle, 
   Plus, 
@@ -30,6 +31,7 @@ const ChatPage = () => {
   const [editTitle, setEditTitle] = useState('');
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { user, logout } = useAuthStore();
   const {
@@ -51,6 +53,10 @@ const ChatPage = () => {
   useEffect(() => {
     loadThreads();
   }, [loadThreads]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, streamingMessage]);
 
   const handleCreateThread = async () => {
     try {
@@ -318,10 +324,10 @@ const ChatPage = () => {
                     }`}
                   >
                     <div
-                      className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                      className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center shadow-sm ${
                         message.role === 'user'
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-200 text-gray-600'
+                          ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white'
+                          : 'bg-gradient-to-br from-purple-500 to-blue-500 text-white'
                       }`}
                     >
                       {message.role === 'user' ? (
@@ -331,44 +337,55 @@ const ChatPage = () => {
                       )}
                     </div>
                     <Card
-                      className={`p-3 ${
+                      className={`${
                         message.role === 'user'
-                          ? 'bg-blue-500 text-white border-blue-500'
-                          : 'bg-white'
+                          ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-md'
+                          : 'bg-white shadow-sm border-gray-200'
                       }`}
                     >
-                      {message.role === 'user' ? (
-                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                      ) : (
-                        <MarkdownRenderer 
-                          content={message.content} 
-                          className="text-sm"
-                        />
-                      )}
-                      <p className="text-xs mt-2 opacity-70">
+                      <div className="p-3">
+                        {message.role === 'user' ? (
+                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                        ) : (
+                          <MarkdownRenderer 
+                            content={message.content} 
+                            className="text-sm"
+                          />
+                        )}
+                      </div>
+                      <div className={`px-3 pb-2 text-xs ${
+                        message.role === 'user' ? 'text-blue-100' : 'text-gray-400'
+                      }`}>
                         {formatDate(message.createdAt)}
-                      </p>
+                      </div>
                     </Card>
                   </div>
                 </div>
               ))}
               
-              {/* Streaming Message */}
+              {/* Typing Indicator or Streaming Message */}
               {isStreaming && (
                 <div className="flex justify-start">
                   <div className="flex items-start space-x-2 max-w-[70%]">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 text-white flex items-center justify-center shadow-sm">
                       <Bot className="w-4 h-4" />
                     </div>
-                    <Card className="p-3 bg-white">
-                      <div className="text-sm">
-                        <MarkdownRenderer content={streamingMessage} className="text-sm" />
-                        <span className="animate-pulse">|</span>
-                      </div>
+                    <Card className="bg-white shadow-sm border-gray-200">
+                      {streamingMessage ? (
+                        <div className="p-3">
+                          <MarkdownRenderer content={streamingMessage} className="text-sm" />
+                          <span className="inline-block w-1 h-4 bg-gray-400 animate-pulse ml-1"></span>
+                        </div>
+                      ) : (
+                        <TypingIndicator />
+                      )}
                     </Card>
                   </div>
                 </div>
               )}
+              
+              {/* Auto-scroll anchor */}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Message Input */}
