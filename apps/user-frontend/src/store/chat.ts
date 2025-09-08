@@ -20,12 +20,12 @@ interface ChatState {
   streamingMessage: string;
   createThread: (title?: string) => Promise<ChatThread>;
   loadThreads: () => Promise<void>;
-  loadMessages: (threadId: string, page?: number) => Promise<void>;
+  loadMessages: (threadId: string, page?: number, password?: string) => Promise<void>;
   loadMoreMessages: () => Promise<void>;
-  setCurrentThread: (thread: ChatThread | null) => void;
+  setCurrentThread: (thread: ChatThread | null, password?: string) => Promise<void>;
   deleteThread: (threadId: string) => Promise<void>;
   renameThread: (threadId: string, title: string) => Promise<void>;
-  sendMessage: (content: string) => Promise<void>;
+  sendMessage: (content: string, password?: string) => Promise<void>;
   clearStreamingMessage: () => void;
 }
 
@@ -60,7 +60,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  loadMessages: async (threadId: string, page: number = 1) => {
+  loadMessages: async (threadId: string, page: number = 1, password?: string) => {
     const { messageCache } = get();
     
     // Check if we have cached data for this thread
@@ -73,7 +73,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ isLoading: page === 1, isLoadingMoreMessages: page > 1 });
     
     try {
-      const response = await chatApi.getThreadMessages(threadId, page);
+      const response = await chatApi.getThreadMessages(threadId, page, undefined, password);
       const newMessages = response.data;
       const { total, hasMore } = response.meta;
 
@@ -122,9 +122,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
           return { isLoading: false, isLoadingMoreMessages: false };
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load messages:', error);
       set({ isLoading: false, isLoadingMoreMessages: false });
+      
+      // If it's a 403 error, throw it so the UI can handle it
+      if (error.response?.status === 403) {
+        throw error;
+      }
     }
   },
 
@@ -140,7 +145,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     await get().loadMessages(currentThread.id, nextPage);
   },
 
-  setCurrentThread: (thread: ChatThread | null) => {
+  setCurrentThread: async (thread: ChatThread | null, password?: string) => {
     const { messageCache } = get();
     
     if (thread) {
@@ -156,7 +161,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
       } else {
         // No cache, load from server
         set({ currentThread: thread, messages: [], streamingMessage: '' });
-        get().loadMessages(thread.id);
+        try {
+          await get().loadMessages(thread.id, 1, password);
+        } catch (error: any) {
+          // If 403, reset current thread and rethrow
+          if (error.response?.status === 403) {
+            set({ currentThread: null, messages: [] });
+            throw error;
+          }
+        }
       }
     } else {
       set({ currentThread: null, messages: [], streamingMessage: '' });
@@ -190,7 +203,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }));
   },
 
-  sendMessage: async (content: string) => {
+  sendMessage: async (content: string, password?: string) => {
     const { currentThread } = get();
     if (!currentThread) return;
 
@@ -245,11 +258,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
         body: JSON.stringify({
           threadId: currentThread.id,
           content,
+          ...(password && { password }),
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send message');
+        const errorText = await response.text();
+        let errorMessage = 'Failed to send message';
+        
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          // If not JSON, use the text directly if it's meaningful
+          if (errorText.length < 200) {
+            errorMessage = errorText;
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const reader = response.body?.getReader();

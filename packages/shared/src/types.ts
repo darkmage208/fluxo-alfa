@@ -45,6 +45,7 @@ export const ChatThreadSchema = z.object({
   userId: z.string().uuid(),
   title: z.string(),
   summary: z.string().nullable().optional(),
+  hasPassword: z.boolean().optional(),
   createdAt: z.date(),
 });
 
@@ -69,6 +70,32 @@ export const CreateMessageSchema = z.object({
 });
 
 export type CreateMessageRequest = z.infer<typeof CreateMessageSchema>;
+
+// Thread Password Schemas
+export const SetThreadPasswordSchema = z.object({
+  password: z.string().min(1).max(100),
+});
+
+export type SetThreadPasswordRequest = z.infer<typeof SetThreadPasswordSchema>;
+
+export const VerifyThreadPasswordSchema = z.object({
+  password: z.string().min(1),
+});
+
+export type VerifyThreadPasswordRequest = z.infer<typeof VerifyThreadPasswordSchema>;
+
+export const UpdateThreadPasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(1).max(100),
+});
+
+export type UpdateThreadPasswordRequest = z.infer<typeof UpdateThreadPasswordSchema>;
+
+export const DeleteThreadPasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+});
+
+export type DeleteThreadPasswordRequest = z.infer<typeof DeleteThreadPasswordSchema>;
 
 // Subscription Types
 export const PlanSchema = z.object({

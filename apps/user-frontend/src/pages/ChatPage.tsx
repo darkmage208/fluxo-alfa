@@ -6,10 +6,13 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useChatStore } from '@/store/chat';
 import { useAuthStore } from '@/store/auth';
+import type { ChatThread } from '@shared/types';
 import { formatDate } from '@/lib/utils';
+import { chatApi } from '@/lib/api';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import StreamingMarkdownRenderer from '@/components/StreamingMarkdownRenderer';
 import TypingIndicator from '@/components/TypingIndicator';
+import ThreadPasswordDialog from '@/components/ThreadPasswordDialog';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { 
   MessageCircle, 
@@ -24,7 +27,10 @@ import {
   ChevronDown,
   Edit3,
   Check,
-  X
+  X,
+  Lock,
+  Shield,
+  MoreVertical
 } from 'lucide-react';
 
 const ChatPage = () => {
@@ -33,6 +39,21 @@ const ChatPage = () => {
   const [editTitle, setEditTitle] = useState('');
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [passwordDialog, setPasswordDialog] = useState<{
+    isOpen: boolean;
+    threadId: string;
+    threadTitle: string;
+    mode: 'verify' | 'set' | 'update' | 'delete';
+    hasPassword: boolean;
+  }>({
+    isOpen: false,
+    threadId: '',
+    threadTitle: '',
+    mode: 'verify',
+    hasPassword: false,
+  });
+  const [threadPasswords, setThreadPasswords] = useState<Map<string, string>>(new Map());
+  const [showThreadMenu, setShowThreadMenu] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { user, logout } = useAuthStore();
@@ -51,6 +72,7 @@ const ChatPage = () => {
     deleteThread,
     renameThread,
     sendMessage,
+    loadMessages,
     loadMoreMessages,
     clearStreamingMessage,
   } = useChatStore();
@@ -100,7 +122,9 @@ const ChatPage = () => {
     setMessageInput('');
 
     try {
-      await sendMessage(content);
+      // Get password for current thread if it exists
+      const password = thread?.hasPassword ? threadPasswords.get(thread.id) : undefined;
+      await sendMessage(content, password);
     } catch (error: any) {
       if (error.message.includes('Daily chat limit')) {
         toast({
@@ -116,6 +140,34 @@ const ChatPage = () => {
             </Link>
           ),
         });
+      } else if (error.message.includes('Thread is password protected') || error.message.includes('Invalid password')) {
+        // Password issue - prompt for password immediately
+        if (thread) {
+          // Remove invalid password
+          setThreadPasswords(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(thread.id);
+            return newMap;
+          });
+          
+          // Restore the message content to the input
+          setMessageInput(content);
+          
+          // Immediately show password dialog with warning
+          openPasswordDialog(
+            thread.id,
+            thread.title || 'New Chat',
+            'verify',
+            true
+          );
+          
+          toast({
+            title: "Authentication required",
+            description: "Invalid or missing password. Please authenticate to send messages.",
+            variant: "destructive",
+            duration: 5000,
+          });
+        }
       } else {
         toast({
           title: "Failed to send message",
@@ -163,9 +215,15 @@ const ChatPage = () => {
     try {
       await deleteThread(threadId);
       setDeleteConfirmId(null);
+      // Remove password from local storage
+      setThreadPasswords(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(threadId);
+        return newMap;
+      });
       toast({
         title: "Thread deleted",
-        description: "The conversation has been removed.",
+        description: "The conversation have been removed.",
       });
     } catch (error: any) {
       toast({
@@ -173,6 +231,190 @@ const ChatPage = () => {
         description: error.response?.data?.error || "Something went wrong",
         variant: "destructive",
       });
+    }
+  };
+
+  // Password handling functions
+  const handleThreadPasswordVerify = async (password: string) => {
+    try {
+      const { threadId } = passwordDialog;
+      const result = await chatApi.verifyThreadPassword(threadId, password);
+      
+      // Check if password verification failed
+      if (!result.data?.isValid) {
+        throw new Error('Invalid password');
+      }
+      
+      // Store password for this session
+      setThreadPasswords(prev => new Map(prev).set(threadId, password));
+      
+      // Find and set the thread as current with the password
+      const thread = threads.find(t => t.id === threadId);
+      if (thread) {
+        await setCurrentThread(thread, password);
+      }
+      
+      toast({
+        title: "Access granted",
+        description: "Thread unlocked successfully.",
+      });
+      
+      // Close the dialog on success
+      closePasswordDialog();
+    } catch (error: any) {
+      // Don't close the dialog, just show the error
+      const errorMessage = error.response?.data?.error || error.message || "Invalid password";
+      
+      // Show error notification
+      toast({
+        title: "Authentication failed", 
+        description: errorMessage,
+        variant: "destructive",
+        duration: 3000,
+      });
+      
+      // Re-throw the error to keep the dialog open and show the error in the dialog
+      throw new Error(errorMessage);
+    }
+  };
+
+  const handleSetPassword = async (password: string) => {
+    try {
+      const { threadId } = passwordDialog;
+      await chatApi.setThreadPassword(threadId, password);
+      
+      // Update threads list to reflect password status
+      await loadThreads();
+      
+      toast({
+        title: "Password set",
+        description: "Thread is now password protected.",
+      });
+      
+      // Close the dialog on success
+      closePasswordDialog();
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || "Failed to set password");
+    }
+  };
+
+  const handleUpdatePassword = async (currentPassword: string, newPassword: string) => {
+    try {
+      const { threadId } = passwordDialog;
+      await chatApi.updateThreadPassword(threadId, currentPassword, newPassword);
+      
+      // Update stored password
+      setThreadPasswords(prev => new Map(prev).set(threadId, newPassword));
+      
+      // Clear cached messages for this thread since password changed
+      const { messageCache } = useChatStore.getState();
+      if (messageCache.has(threadId)) {
+        messageCache.delete(threadId);
+      }
+      
+      toast({
+        title: "Password updated",
+        description: "Thread password has been changed.",
+      });
+      
+      // Close the dialog on success
+      closePasswordDialog();
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || "Failed to update password");
+    }
+  };
+
+  const handleDeletePassword = async (currentPassword: string) => {
+    try {
+      const { threadId } = passwordDialog;
+      await chatApi.deleteThreadPassword(threadId, currentPassword);
+      
+      // Remove password from local storage
+      setThreadPasswords(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(threadId);
+        return newMap;
+      });
+      
+      // Clear cached messages for this thread since password was removed
+      const { messageCache } = useChatStore.getState();
+      if (messageCache.has(threadId)) {
+        messageCache.delete(threadId);
+      }
+      
+      // Update threads list to reflect password status
+      await loadThreads();
+      
+      toast({
+        title: "Password removed",
+        description: "Thread is no longer password protected.",
+      });
+      
+      // Close the dialog on success
+      closePasswordDialog();
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || "Failed to remove password");
+    }
+  };
+
+  const openPasswordDialog = (
+    threadId: string, 
+    threadTitle: string, 
+    mode: 'verify' | 'set' | 'update' | 'delete',
+    hasPassword: boolean
+  ) => {
+    setPasswordDialog({
+      isOpen: true,
+      threadId,
+      threadTitle,
+      mode,
+      hasPassword,
+    });
+  };
+
+  const closePasswordDialog = () => {
+    setPasswordDialog(prev => ({ ...prev, isOpen: false }));
+  };
+
+  const handleThreadClick = async (thread: ChatThread) => {
+    // If thread has password and we don't have it stored, prompt for password
+    if (thread.hasPassword && !threadPasswords.has(thread.id)) {
+      openPasswordDialog(
+        thread.id,
+        thread.title || 'New Chat',
+        'verify',
+        true
+      );
+      return;
+    }
+    
+    try {
+      // Set current thread with password if available
+      const password = threadPasswords.get(thread.id);
+      await setCurrentThread(thread, password);
+    } catch (error: any) {
+      // If 403, prompt for password
+      if (error.response?.status === 403) {
+        // Remove stored password if it's invalid
+        setThreadPasswords(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(thread.id);
+          return newMap;
+        });
+        
+        openPasswordDialog(
+          thread.id,
+          thread.title || 'New Chat',
+          'verify',
+          true
+        );
+      } else {
+        toast({
+          title: "Failed to load thread",
+          description: error.response?.data?.error || "Something went wrong",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -213,7 +455,7 @@ const ChatPage = () => {
                       ? 'bg-blue-50 border border-blue-200'
                       : 'hover:bg-gray-50'
                   }`}
-                  onClick={() => setCurrentThread(thread)}
+                  onClick={() => handleThreadClick(thread)}
                 >
                   <MessageCircle className="w-4 h-4 mr-3 text-gray-400 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -244,28 +486,115 @@ const ChatPage = () => {
                     )}
                   </div>
                   <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="p-1 h-auto"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditThread(thread.id, thread.title || '');
-                      }}
-                    >
-                      <Edit3 className="w-3 h-3 text-gray-500" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="p-1 h-auto"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteConfirmId(thread.id);
-                      }}
-                    >
-                      <Trash2 className="w-3 h-3 text-red-500" />
-                    </Button>
+                    {thread.hasPassword && (
+                      <Lock className="w-3 h-3 text-blue-500" />
+                    )}
+                    <div className="relative">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="p-1 h-auto"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowThreadMenu(showThreadMenu === thread.id ? null : thread.id);
+                        }}
+                        title="Thread options"
+                      >
+                        <MoreVertical className="w-3 h-3 text-gray-500" />
+                      </Button>
+
+                      {/* Thread options dropdown */}
+                      {showThreadMenu === thread.id && (
+                        <>
+                          <div 
+                            className="fixed inset-0 z-10" 
+                            onClick={() => setShowThreadMenu(null)}
+                          />
+                          <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg border z-20">
+                            <div className="py-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowThreadMenu(null);
+                                  handleEditThread(thread.id, thread.title || '');
+                                }}
+                                className="flex items-center w-full px-3 py-2 text-sm hover:bg-gray-100"
+                              >
+                                <Edit3 className="w-4 h-4 mr-2" />
+                                Rename Thread
+                              </button>
+                              
+                              {thread.hasPassword ? (
+                                <>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShowThreadMenu(null);
+                                      openPasswordDialog(
+                                        thread.id, 
+                                        thread.title || 'New Chat', 
+                                        'update', 
+                                        true
+                                      );
+                                    }}
+                                    className="flex items-center w-full px-3 py-2 text-sm hover:bg-gray-100"
+                                  >
+                                    <Lock className="w-4 h-4 mr-2" />
+                                    Update Password
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShowThreadMenu(null);
+                                      openPasswordDialog(
+                                        thread.id, 
+                                        thread.title || 'New Chat', 
+                                        'delete', 
+                                        true
+                                      );
+                                    }}
+                                    className="flex items-center w-full px-3 py-2 text-sm hover:bg-gray-100"
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Remove Password
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowThreadMenu(null);
+                                    openPasswordDialog(
+                                      thread.id, 
+                                      thread.title || 'New Chat', 
+                                      'set', 
+                                      false
+                                    );
+                                  }}
+                                  className="flex items-center w-full px-3 py-2 text-sm hover:bg-gray-100"
+                                >
+                                  <Shield className="w-4 h-4 mr-2" />
+                                  Set Password
+                                </button>
+                              )}
+                              
+                              <hr className="my-1" />
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowThreadMenu(null);
+                                  setDeleteConfirmId(thread.id);
+                                }}
+                                className="flex items-center w-full px-3 py-2 text-sm hover:bg-gray-100 text-red-600"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete Thread
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -487,6 +816,19 @@ const ChatPage = () => {
           </div>
         </div>
       )}
+
+      {/* Thread Password Dialog */}
+      <ThreadPasswordDialog
+        isOpen={passwordDialog.isOpen}
+        onClose={closePasswordDialog}
+        onPasswordSubmit={handleThreadPasswordVerify}
+        onSetPassword={handleSetPassword}
+        onUpdatePassword={handleUpdatePassword}
+        onDeletePassword={handleDeletePassword}
+        mode={passwordDialog.mode}
+        threadTitle={passwordDialog.threadTitle}
+        hasPassword={passwordDialog.hasPassword}
+      />
     </div>
   );
 };

@@ -5,6 +5,10 @@ import { ChatService } from '../services/chatService';
 import { authenticateToken } from '../middleware/auth';
 import { 
   CreateMessageSchema,
+  SetThreadPasswordSchema,
+  VerifyThreadPasswordSchema,
+  UpdateThreadPasswordSchema,
+  DeleteThreadPasswordSchema,
   createSuccessResponse,
   createPaginatedResponse,
   ValidationError,
@@ -81,8 +85,20 @@ router.get('/thread/:id/messages', async (req, res, next) => {
     const threadId = req.params.id;
     const page = parseInt(req.query.page as string) || 1;
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 100); // Cap at 100
+    const password = req.query.password as string;
 
-    const result = await chatService.getThreadMessages(threadId, userId, page, limit);
+    const result = await chatService.getThreadMessages(threadId, userId, page, limit, password);
+    
+    // If password is needed, return special response
+    if (result.needsPassword) {
+      res.status(403).json({
+        success: false,
+        error: 'Password required',
+        needsPassword: true
+      });
+      return;
+    }
+
     const response = createPaginatedResponse(result.messages, page, limit, result.total);
     
     // Add hasMore to meta field
@@ -150,8 +166,11 @@ router.post('/message',
       res.write('data: {"type":"connected"}\n\n');
 
       try {
+        // Get password from request if provided
+        const password = req.body.password as string;
+        
         // Stream the AI response
-        for await (const chunk of chatService.streamMessage(req.body, userId)) {
+        for await (const chunk of chatService.streamMessage(req.body, userId, password)) {
           res.write(`data: ${JSON.stringify(chunk)}\n\n`);
         }
       } catch (streamError) {
@@ -183,5 +202,81 @@ router.get('/stats', async (req, res, next) => {
     next(error);
   }
 });
+
+// @route   POST /chat/thread/:id/password
+// @desc    Set password for a thread
+// @access  Private
+router.post('/thread/:id/password', 
+  validateRequest(SetThreadPasswordSchema),
+  async (req, res, next) => {
+    try {
+      const userId = req.userId!;
+      const threadId = req.params.id;
+      const { password } = req.body;
+
+      await chatService.setThreadPassword(threadId, userId, password);
+      res.json(createSuccessResponse(null, 'Thread password set successfully'));
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// @route   POST /chat/thread/:id/verify-password
+// @desc    Verify password for a thread
+// @access  Private
+router.post('/thread/:id/verify-password',
+  validateRequest(VerifyThreadPasswordSchema),
+  async (req, res, next) => {
+    try {
+      const userId = req.userId!;
+      const threadId = req.params.id;
+      const { password } = req.body;
+
+      const isValid = await chatService.verifyThreadPassword(threadId, userId, password);
+      res.json(createSuccessResponse({ isValid }, 'Password verification completed'));
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// @route   PUT /chat/thread/:id/password
+// @desc    Update password for a thread
+// @access  Private
+router.put('/thread/:id/password',
+  validateRequest(UpdateThreadPasswordSchema),
+  async (req, res, next) => {
+    try {
+      const userId = req.userId!;
+      const threadId = req.params.id;
+      const { currentPassword, newPassword } = req.body;
+
+      await chatService.updateThreadPassword(threadId, userId, currentPassword, newPassword);
+      res.json(createSuccessResponse(null, 'Thread password updated successfully'));
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// @route   DELETE /chat/thread/:id/password
+// @desc    Remove password from a thread
+// @access  Private
+router.delete('/thread/:id/password',
+  validateRequest(DeleteThreadPasswordSchema),
+  async (req, res, next) => {
+    try {
+      const userId = req.userId!;
+      const threadId = req.params.id;
+      const { currentPassword } = req.body;
+
+      await chatService.deleteThreadPassword(threadId, userId, currentPassword);
+      res.json(createSuccessResponse(null, 'Thread password removed successfully'));
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 export default router;

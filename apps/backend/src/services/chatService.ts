@@ -3,6 +3,7 @@ import { OpenAIService } from './openaiService';
 import { RAGService } from './ragService';
 import { AnalyticsService } from './analyticsService';
 import logger from '../config/logger';
+import bcrypt from 'bcryptjs';
 import { 
   NotFoundError, 
   ValidationError, 
@@ -54,13 +55,32 @@ export class ChatService {
           orderBy: { updatedAt: 'desc' },
           skip,
           take: limit,
+          select: {
+            id: true,
+            userId: true,
+            title: true,
+            summary: true,
+            passwordHash: true,
+            createdAt: true,
+            updatedAt: true,
+          },
         }),
         prisma.chatThread.count({
           where: { userId },
         }),
       ]);
 
-      return { threads, total };
+      // Transform threads to include hasPassword field and exclude passwordHash
+      const transformedThreads = threads.map(thread => ({
+        id: thread.id,
+        userId: thread.userId,
+        title: thread.title,
+        summary: thread.summary,
+        hasPassword: !!thread.passwordHash,
+        createdAt: thread.createdAt,
+      }));
+
+      return { threads: transformedThreads, total };
     } catch (error) {
       logger.error('Get user threads error:', error);
       throw error;
@@ -71,16 +91,36 @@ export class ChatService {
     threadId: string, 
     userId: string, 
     page: number = 1, 
-    limit: number = 50
-  ): Promise<{ messages: ChatMessage[]; total: number; hasMore: boolean }> {
+    limit: number = 50,
+    password?: string
+  ): Promise<{ messages: ChatMessage[]; total: number; hasMore: boolean; needsPassword?: boolean }> {
     try {
-      // Verify thread belongs to user
+      // Verify thread belongs to user and get password info
       const thread = await prisma.chatThread.findFirst({
         where: { id: threadId, userId },
+        select: { passwordHash: true },
       });
 
       if (!thread) {
         throw new NotFoundError('Thread not found');
+      }
+
+      // Check if thread requires password
+      if (thread.passwordHash) {
+        if (!password) {
+          return {
+            messages: [],
+            total: 0,
+            hasMore: false,
+            needsPassword: true,
+          };
+        }
+
+        // Verify password
+        const isPasswordValid = await bcrypt.compare(password, thread.passwordHash);
+        if (!isPasswordValid) {
+          throw new ValidationError('Invalid password');
+        }
       }
 
       // Get total count
@@ -158,18 +198,31 @@ export class ChatService {
     }
   }
 
-  async *streamMessage(request: CreateMessageRequest, userId: string) {
+  async *streamMessage(request: CreateMessageRequest, userId: string, password?: string) {
     try {
       // Check user's daily usage and plan limits
       await this.checkUsageLimits(userId);
 
-      // Verify thread belongs to user
+      // Verify thread belongs to user and check password if needed
       const thread = await prisma.chatThread.findFirst({
         where: { id: request.threadId, userId },
+        select: { id: true, title: true, summary: true, passwordHash: true },
       });
 
       if (!thread) {
         throw new NotFoundError('Thread not found');
+      }
+
+      // Check password protection
+      if (thread.passwordHash) {
+        if (!password) {
+          throw new ValidationError('Thread is password protected');
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, thread.passwordHash);
+        if (!isPasswordValid) {
+          throw new ValidationError('Invalid password');
+        }
       }
 
       // Get conversation history (limit to last 5 messages for AI input)
@@ -493,6 +546,138 @@ export class ChatService {
       };
     } catch (error) {
       logger.error('Get user chat stats error:', error);
+      throw error;
+    }
+  }
+
+  // Password Protection Methods
+  async setThreadPassword(threadId: string, userId: string, password: string): Promise<void> {
+    try {
+      // Verify thread belongs to user
+      const thread = await prisma.chatThread.findFirst({
+        where: { id: threadId, userId },
+      });
+
+      if (!thread) {
+        throw new NotFoundError('Thread not found');
+      }
+
+      // Hash the password
+      const passwordHash = await bcrypt.hash(password, 12);
+
+      // Update thread with password hash
+      await prisma.chatThread.update({
+        where: { id: threadId },
+        data: { passwordHash },
+      });
+
+      logger.info(`Password set for thread ${threadId}`);
+    } catch (error) {
+      logger.error('Set thread password error:', error);
+      throw error;
+    }
+  }
+
+  async verifyThreadPassword(threadId: string, userId: string, password: string): Promise<boolean> {
+    try {
+      // Get thread with password hash
+      const thread = await prisma.chatThread.findFirst({
+        where: { id: threadId, userId },
+        select: { passwordHash: true },
+      });
+
+      if (!thread) {
+        throw new NotFoundError('Thread not found');
+      }
+
+      // If no password is set, allow access
+      if (!thread.passwordHash) {
+        return true;
+      }
+
+      // Verify password
+      const isValid = await bcrypt.compare(password, thread.passwordHash);
+      return isValid;
+    } catch (error) {
+      logger.error('Verify thread password error:', error);
+      throw error;
+    }
+  }
+
+  async updateThreadPassword(
+    threadId: string, 
+    userId: string, 
+    currentPassword: string, 
+    newPassword: string
+  ): Promise<void> {
+    try {
+      // Get thread with password hash
+      const thread = await prisma.chatThread.findFirst({
+        where: { id: threadId, userId },
+        select: { passwordHash: true },
+      });
+
+      if (!thread) {
+        throw new NotFoundError('Thread not found');
+      }
+
+      if (!thread.passwordHash) {
+        throw new ValidationError('Thread does not have a password set');
+      }
+
+      // Verify current password
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, thread.passwordHash);
+      if (!isCurrentPasswordValid) {
+        throw new ValidationError('Current password is incorrect');
+      }
+
+      // Hash new password
+      const newPasswordHash = await bcrypt.hash(newPassword, 12);
+
+      // Update thread with new password hash
+      await prisma.chatThread.update({
+        where: { id: threadId },
+        data: { passwordHash: newPasswordHash },
+      });
+
+      logger.info(`Password updated for thread ${threadId}`);
+    } catch (error) {
+      logger.error('Update thread password error:', error);
+      throw error;
+    }
+  }
+
+  async deleteThreadPassword(threadId: string, userId: string, currentPassword: string): Promise<void> {
+    try {
+      // Get thread with password hash
+      const thread = await prisma.chatThread.findFirst({
+        where: { id: threadId, userId },
+        select: { passwordHash: true },
+      });
+
+      if (!thread) {
+        throw new NotFoundError('Thread not found');
+      }
+
+      if (!thread.passwordHash) {
+        throw new ValidationError('Thread does not have a password set');
+      }
+
+      // Verify current password
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, thread.passwordHash);
+      if (!isCurrentPasswordValid) {
+        throw new ValidationError('Current password is incorrect');
+      }
+
+      // Remove password hash
+      await prisma.chatThread.update({
+        where: { id: threadId },
+        data: { passwordHash: null },
+      });
+
+      logger.info(`Password removed from thread ${threadId}`);
+    } catch (error) {
+      logger.error('Delete thread password error:', error);
       throw error;
     }
   }

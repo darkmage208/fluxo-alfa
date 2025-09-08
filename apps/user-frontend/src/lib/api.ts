@@ -122,9 +122,9 @@ export const chatApi = {
     return response.data;
   },
 
-  getThreadMessages: async (threadId: string, page = 1, limit = 20) => {
+  getThreadMessages: async (threadId: string, page = 1, limit = 20, password?: string) => {
     const response = await api.get(`/chat/thread/${threadId}/messages`, {
-      params: { page, limit },
+      params: { page, limit, password },
     });
     return response.data;
   },
@@ -151,6 +151,32 @@ export const chatApi = {
   getStats: async () => {
     const response = await api.get('/chat/stats');
     return response.data.data;
+  },
+
+  // Password management
+  setThreadPassword: async (threadId: string, password: string) => {
+    const response = await api.post(`/chat/thread/${threadId}/password`, { password });
+    return response.data;
+  },
+
+  verifyThreadPassword: async (threadId: string, password: string) => {
+    const response = await api.post(`/chat/thread/${threadId}/verify-password`, { password });
+    return response.data;
+  },
+
+  updateThreadPassword: async (threadId: string, currentPassword: string, newPassword: string) => {
+    const response = await api.put(`/chat/thread/${threadId}/password`, { 
+      currentPassword, 
+      newPassword 
+    });
+    return response.data;
+  },
+
+  deleteThreadPassword: async (threadId: string, currentPassword: string) => {
+    const response = await api.delete(`/chat/thread/${threadId}/password`, {
+      data: { currentPassword }
+    });
+    return response.data;
   },
 };
 
