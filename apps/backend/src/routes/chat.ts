@@ -73,15 +73,26 @@ router.get('/threads', async (req, res, next) => {
 });
 
 // @route   GET /chat/thread/:id/messages
-// @desc    Get messages for a specific thread
+// @desc    Get messages for a specific thread with pagination
 // @access  Private
 router.get('/thread/:id/messages', async (req, res, next) => {
   try {
     const userId = req.userId!;
     const threadId = req.params.id;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = Math.min(parseInt(req.query.limit as string) || 50, 100); // Cap at 100
 
-    const messages = await chatService.getThreadMessages(threadId, userId);
-    res.json(createSuccessResponse(messages, 'Messages retrieved successfully'));
+    const result = await chatService.getThreadMessages(threadId, userId, page, limit);
+    const response = createPaginatedResponse(result.messages, page, limit, result.total);
+    
+    // Add hasMore to meta field
+    res.json({
+      ...response,
+      meta: {
+        ...response.pagination,
+        hasMore: result.hasMore
+      }
+    });
   } catch (error) {
     next(error);
   }

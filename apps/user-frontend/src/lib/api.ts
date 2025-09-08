@@ -122,9 +122,11 @@ export const chatApi = {
     return response.data;
   },
 
-  getThreadMessages: async (threadId: string) => {
-    const response = await api.get(`/chat/thread/${threadId}/messages`);
-    return response.data.data;
+  getThreadMessages: async (threadId: string, page = 1, limit = 20) => {
+    const response = await api.get(`/chat/thread/${threadId}/messages`, {
+      params: { page, limit },
+    });
+    return response.data;
   },
 
   deleteThread: async (threadId: string): Promise<void> => {

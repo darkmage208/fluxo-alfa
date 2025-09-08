@@ -67,7 +67,12 @@ export class ChatService {
     }
   }
 
-  async getThreadMessages(threadId: string, userId: string): Promise<ChatMessage[]> {
+  async getThreadMessages(
+    threadId: string, 
+    userId: string, 
+    page: number = 1, 
+    limit: number = 50
+  ): Promise<{ messages: ChatMessage[]; total: number; hasMore: boolean }> {
     try {
       // Verify thread belongs to user
       const thread = await prisma.chatThread.findFirst({
@@ -78,12 +83,29 @@ export class ChatService {
         throw new NotFoundError('Thread not found');
       }
 
-      const messages = await prisma.chatMessage.findMany({
+      // Get total count
+      const total = await prisma.chatMessage.count({
         where: { threadId },
-        orderBy: { createdAt: 'asc' },
       });
 
-      return messages;
+      // Calculate offset and get messages in reverse chronological order for pagination
+      // (most recent first for infinite scroll from bottom)
+      const offset = (page - 1) * limit;
+      const messages = await prisma.chatMessage.findMany({
+        where: { threadId },
+        orderBy: { createdAt: 'desc' }, // Most recent first
+        skip: offset,
+        take: limit,
+      });
+
+      // Reverse to get chronological order for display
+      const chronologicalMessages = messages.reverse();
+
+      return {
+        messages: chronologicalMessages,
+        total,
+        hasMore: offset + messages.length < total,
+      };
     } catch (error) {
       logger.error('Get thread messages error:', error);
       throw error;

@@ -2,16 +2,26 @@ import { create } from 'zustand';
 import { chatApi } from '@/lib/api';
 import type { ChatThread, ChatMessage } from '@shared/types';
 
+interface ThreadMessageCache {
+  messages: ChatMessage[];
+  total: number;
+  hasMore: boolean;
+  lastPage: number;
+}
+
 interface ChatState {
   threads: ChatThread[];
   currentThread: ChatThread | null;
   messages: ChatMessage[];
+  messageCache: Map<string, ThreadMessageCache>;
   isLoading: boolean;
+  isLoadingMoreMessages: boolean;
   isStreaming: boolean;
   streamingMessage: string;
   createThread: (title?: string) => Promise<ChatThread>;
   loadThreads: () => Promise<void>;
-  loadMessages: (threadId: string) => Promise<void>;
+  loadMessages: (threadId: string, page?: number) => Promise<void>;
+  loadMoreMessages: () => Promise<void>;
   setCurrentThread: (thread: ChatThread | null) => void;
   deleteThread: (threadId: string) => Promise<void>;
   renameThread: (threadId: string, title: string) => Promise<void>;
@@ -23,7 +33,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   threads: [],
   currentThread: null,
   messages: [],
+  messageCache: new Map<string, ThreadMessageCache>(),
   isLoading: false,
+  isLoadingMoreMessages: false,
   isStreaming: false,
   streamingMessage: '',
 
@@ -48,31 +60,122 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  loadMessages: async (threadId: string) => {
-    set({ isLoading: true });
+  loadMessages: async (threadId: string, page: number = 1) => {
+    const { messageCache } = get();
+    
+    // Check if we have cached data for this thread
+    const cachedData = messageCache.get(threadId);
+    if (cachedData && page === 1) {
+      set({ messages: cachedData.messages, isLoading: false });
+      return;
+    }
+
+    set({ isLoading: page === 1, isLoadingMoreMessages: page > 1 });
+    
     try {
-      const messages = await chatApi.getThreadMessages(threadId);
-      set({ messages, isLoading: false });
+      const response = await chatApi.getThreadMessages(threadId, page);
+      const newMessages = response.data;
+      const { total, hasMore } = response.meta;
+
+      if (page === 1) {
+        // First page - replace messages
+        const cacheData: ThreadMessageCache = {
+          messages: newMessages,
+          total,
+          hasMore,
+          lastPage: 1,
+        };
+        
+        set((state) => {
+          const newCache = new Map(state.messageCache);
+          newCache.set(threadId, cacheData);
+          return {
+            messages: newMessages,
+            messageCache: newCache,
+            isLoading: false,
+            isLoadingMoreMessages: false,
+          };
+        });
+      } else {
+        // Subsequent pages - prepend messages (for infinite scroll upward)
+        set((state) => {
+          const existingCache = state.messageCache.get(threadId);
+          if (existingCache) {
+            const updatedMessages = [...newMessages, ...existingCache.messages];
+            const updatedCache: ThreadMessageCache = {
+              messages: updatedMessages,
+              total,
+              hasMore,
+              lastPage: page,
+            };
+            
+            const newCache = new Map(state.messageCache);
+            newCache.set(threadId, updatedCache);
+            
+            return {
+              messages: updatedMessages,
+              messageCache: newCache,
+              isLoading: false,
+              isLoadingMoreMessages: false,
+            };
+          }
+          return { isLoading: false, isLoadingMoreMessages: false };
+        });
+      }
     } catch (error) {
       console.error('Failed to load messages:', error);
-      set({ isLoading: false });
+      set({ isLoading: false, isLoadingMoreMessages: false });
     }
   },
 
+  loadMoreMessages: async () => {
+    const { currentThread, messageCache, isLoadingMoreMessages } = get();
+    
+    if (!currentThread || isLoadingMoreMessages) return;
+    
+    const cachedData = messageCache.get(currentThread.id);
+    if (!cachedData || !cachedData.hasMore) return;
+    
+    const nextPage = cachedData.lastPage + 1;
+    await get().loadMessages(currentThread.id, nextPage);
+  },
+
   setCurrentThread: (thread: ChatThread | null) => {
-    set({ currentThread: thread, messages: [], streamingMessage: '' });
+    const { messageCache } = get();
+    
     if (thread) {
-      get().loadMessages(thread.id);
+      const cachedData = messageCache.get(thread.id);
+      if (cachedData) {
+        // Use cached messages immediately
+        set({ 
+          currentThread: thread, 
+          messages: cachedData.messages, 
+          streamingMessage: '',
+          isLoading: false
+        });
+      } else {
+        // No cache, load from server
+        set({ currentThread: thread, messages: [], streamingMessage: '' });
+        get().loadMessages(thread.id);
+      }
+    } else {
+      set({ currentThread: null, messages: [], streamingMessage: '' });
     }
   },
 
   deleteThread: async (threadId: string) => {
     await chatApi.deleteThread(threadId);
-    set((state) => ({
-      threads: state.threads.filter((t) => t.id !== threadId),
-      currentThread: state.currentThread?.id === threadId ? null : state.currentThread,
-      messages: state.currentThread?.id === threadId ? [] : state.messages,
-    }));
+    set((state) => {
+      const newCache = new Map(state.messageCache);
+      newCache.delete(threadId); // Clear cache for deleted thread
+      
+      return {
+        threads: state.threads.filter((t) => t.id !== threadId),
+        currentThread: state.currentThread?.id === threadId ? null : state.currentThread,
+        messages: state.currentThread?.id === threadId ? [] : state.messages,
+        messageCache: newCache,
+      };
+    });
   },
 
   renameThread: async (threadId: string, title: string) => {
@@ -103,11 +206,33 @@ export const useChatStore = create<ChatState>((set, get) => ({
       createdAt: new Date(),
     };
 
-    set((state) => ({
-      messages: [...state.messages, userMessage],
-      isStreaming: true,
-      streamingMessage: '',
-    }));
+    set((state) => {
+      const newMessages = [...state.messages, userMessage];
+      
+      // Update cache with new user message
+      const cachedData = state.messageCache.get(currentThread.id);
+      if (cachedData) {
+        const newCache = new Map(state.messageCache);
+        newCache.set(currentThread.id, {
+          ...cachedData,
+          messages: newMessages,
+          total: cachedData.total + 1,
+        });
+        
+        return {
+          messages: newMessages,
+          messageCache: newCache,
+          isStreaming: true,
+          streamingMessage: '',
+        };
+      }
+      
+      return {
+        messages: newMessages,
+        isStreaming: true,
+        streamingMessage: '',
+      };
+    });
 
     try {
       // Create a custom EventSource-like implementation
@@ -190,11 +315,33 @@ export const useChatStore = create<ChatState>((set, get) => ({
                   createdAt: new Date(),
                 };
 
-                set((state) => ({
-                  messages: [...state.messages, assistantMessage],
-                  isStreaming: false,
-                  streamingMessage: '', // Clear streaming message when complete
-                }));
+                set((state) => {
+                  const newMessages = [...state.messages, assistantMessage];
+                  
+                  // Update cache with assistant message
+                  const cachedData = state.messageCache.get(currentThread.id);
+                  if (cachedData) {
+                    const newCache = new Map(state.messageCache);
+                    newCache.set(currentThread.id, {
+                      ...cachedData,
+                      messages: newMessages,
+                      total: cachedData.total + 1,
+                    });
+                    
+                    return {
+                      messages: newMessages,
+                      messageCache: newCache,
+                      isStreaming: false,
+                      streamingMessage: '',
+                    };
+                  }
+                  
+                  return {
+                    messages: newMessages,
+                    isStreaming: false,
+                    streamingMessage: '',
+                  };
+                });
                 
                 // Reset accumulator for next message
                 streamingContent = '';

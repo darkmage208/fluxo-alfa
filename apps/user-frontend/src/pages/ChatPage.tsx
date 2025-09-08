@@ -10,6 +10,7 @@ import { formatDate } from '@/lib/utils';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import StreamingMarkdownRenderer from '@/components/StreamingMarkdownRenderer';
 import TypingIndicator from '@/components/TypingIndicator';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { 
   MessageCircle, 
   Plus, 
@@ -39,7 +40,9 @@ const ChatPage = () => {
     threads,
     currentThread,
     messages,
+    messageCache,
     isLoading,
+    isLoadingMoreMessages,
     isStreaming,
     streamingMessage,
     loadThreads,
@@ -48,6 +51,7 @@ const ChatPage = () => {
     deleteThread,
     renameThread,
     sendMessage,
+    loadMoreMessages,
     clearStreamingMessage,
   } = useChatStore();
 
@@ -58,6 +62,18 @@ const ChatPage = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingMessage]);
+
+  // Get current thread's cache data for infinite scroll
+  const currentThreadCache = currentThread ? messageCache.get(currentThread.id) : null;
+  const hasMoreMessages = currentThreadCache?.hasMore || false;
+
+  // Infinite scroll hook for loading more messages
+  const { loadMoreRef } = useInfiniteScroll({
+    hasMore: hasMoreMessages,
+    isLoading: isLoadingMoreMessages,
+    onLoadMore: loadMoreMessages,
+    rootMargin: '50px',
+  });
 
   const handleCreateThread = async () => {
     try {
@@ -314,6 +330,17 @@ const ChatPage = () => {
           <>
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Load more messages trigger */}
+              {hasMoreMessages && (
+                <div ref={loadMoreRef} className="flex justify-center py-2">
+                  {isLoadingMoreMessages ? (
+                    <div className="text-sm text-gray-500">Loading more messages...</div>
+                  ) : (
+                    <div className="text-sm text-gray-400">Scroll up for more messages</div>
+                  )}
+                </div>
+              )}
+              
               {messages.map((message) => (
                 <div
                   key={message.id}
