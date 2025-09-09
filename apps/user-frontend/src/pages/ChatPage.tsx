@@ -27,7 +27,8 @@ import {
   Edit3,
   Lock,
   Shield,
-  MoreVertical
+  MoreVertical,
+  Menu
 } from 'lucide-react';
 
 const ChatPage = () => {
@@ -51,8 +52,11 @@ const ChatPage = () => {
   });
   const [threadPasswords, setThreadPasswords] = useState<Map<string, string>>(new Map());
   const [showThreadMenu, setShowThreadMenu] = useState<string | null>(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [previousScrollHeight, setPreviousScrollHeight] = useState(0);
   const { toast } = useToast();
 
   // Auto-resize textarea function
@@ -109,13 +113,30 @@ const ChatPage = () => {
   const currentThreadCache = currentThread ? messageCache.get(currentThread.id) : null;
   const hasMoreMessages = currentThreadCache?.hasMore || false;
 
-  // Infinite scroll hook for loading more messages
+  // Custom infinite scroll with scroll position preservation
   const { loadMoreRef } = useInfiniteScroll({
     hasMore: hasMoreMessages,
     isLoading: isLoadingMoreMessages,
-    onLoadMore: loadMoreMessages,
+    onLoadMore: () => {
+      const container = messagesContainerRef.current;
+      if (container) {
+        setPreviousScrollHeight(container.scrollHeight);
+      }
+      loadMoreMessages();
+    },
     rootMargin: '50px',
   });
+
+  // Restore scroll position after loading more messages
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (container && previousScrollHeight > 0 && !isLoadingMoreMessages) {
+      const newScrollHeight = container.scrollHeight;
+      const scrollDiff = newScrollHeight - previousScrollHeight;
+      container.scrollTop = container.scrollTop + scrollDiff;
+      setPreviousScrollHeight(0);
+    }
+  }, [messages.length, isLoadingMoreMessages, previousScrollHeight]);
 
   const handleCreateThread = async () => {
     try {
@@ -450,8 +471,127 @@ const ChatPage = () => {
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Sidebar */}
-      <div className="w-80 bg-card border-r border-border flex flex-col shadow-sm">
+      {/* Mobile Sidebar Overlay */}
+      {isMobileSidebarOpen && (
+        <>
+          <div 
+            className="fixed inset-0 z-40 bg-black/50 sm:hidden" 
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+          <div className="fixed left-0 top-0 z-50 w-80 h-full bg-card border-r border-border flex flex-col shadow-xl sm:hidden">
+            {/* Mobile Sidebar Content - Same as desktop */}
+            <div className="p-4 border-b border-border">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                    <MessageCircle className="w-4 h-4 text-white" />
+                  </div>
+                  <h1 className="text-xl font-semibold text-foreground">Fluxo Alfa</h1>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <ThemeToggle />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsMobileSidebarOpen(false)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <MoreVertical className="w-4 h-4 rotate-90" />
+                  </Button>
+                </div>
+              </div>
+              <Button
+                className="w-full"
+                onClick={() => {
+                  handleCreateThread();
+                  setIsMobileSidebarOpen(false);
+                }}
+                disabled={isLoading}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                New Chat
+              </Button>
+            </div>
+            {/* Mobile Threads List */}
+            <div className="flex-1 overflow-y-auto">
+              {isLoading ? (
+                <div className="p-4 text-center text-muted-foreground">
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <span>Loading conversations...</span>
+                  </div>
+                </div>
+              ) : threads.length === 0 ? (
+                <div className="p-8 text-center">
+                  <MessageCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground font-medium">No conversations yet</p>
+                  <p className="text-sm text-muted-foreground mt-1">Start a new chat to begin!</p>
+                </div>
+              ) : (
+                <div className="p-3 space-y-2">
+                  {threads.map((thread) => (
+                    <div
+                      key={thread.id}
+                      className={`group flex items-center p-3 rounded-xl cursor-pointer transition-all duration-200 ${
+                        currentThread?.id === thread.id
+                          ? 'bg-primary/10 border border-primary/20 shadow-sm'
+                          : 'hover:bg-accent/50'
+                      }`}
+                      onClick={() => {
+                        handleThreadClick(thread);
+                        setIsMobileSidebarOpen(false);
+                      }}
+                    >
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 flex-shrink-0 ${
+                        currentThread?.id === thread.id 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'bg-muted text-muted-foreground'
+                      }`}>
+                        <MessageCircle className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {thread.title || 'New Chat'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDate(thread.createdAt)}
+                        </p>
+                      </div>
+                      {thread.hasPassword && (
+                        <div className="flex items-center justify-center w-6 h-6 rounded-md bg-blue-100 dark:bg-blue-900/30">
+                          <Lock className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* Mobile User Dropdown */}
+            <div className="p-4 border-t border-border">
+              <div className="relative">
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-between p-3 h-auto hover:bg-accent"
+                  onClick={() => setShowUserDropdown(!showUserDropdown)}
+                >
+                  <div className="flex items-center text-sm text-foreground">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center mr-3">
+                      <User className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="truncate">{user?.email}</span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+      
+      {/* Desktop Sidebar */}
+      <div className="w-80 lg:w-80 md:w-72 sm:w-64 bg-card border-r border-border flex flex-col shadow-sm hidden sm:flex">
         {/* Header */}
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between mb-4">
@@ -708,10 +848,30 @@ const ChatPage = () => {
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
+        {/* Mobile Header */}
+        <div className="sm:hidden p-4 border-b border-border bg-card">
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className="h-8 w-8 p-0"
+            >
+              <Menu className="w-4 h-4" />
+            </Button>
+            <div className="flex items-center space-x-2">
+              <div className="w-6 h-6 bg-gradient-to-br from-blue-600 to-purple-600 rounded-md flex items-center justify-center">
+                <MessageCircle className="w-3 h-3 text-white" />
+              </div>
+              <h1 className="text-lg font-semibold text-foreground">Fluxo Alfa</h1>
+            </div>
+            <ThemeToggle />
+          </div>
+        </div>
         {currentThread ? (
           <>
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6">
               <div className="max-w-6xl mx-auto space-y-6">
                 {/* Load more messages trigger */}
                 {hasMoreMessages && (
@@ -830,20 +990,11 @@ const ChatPage = () => {
                       rows={1}
                     />
                   </div>
-                  <div className="text-xs text-muted-foreground/70 mt-2 px-2 flex items-center space-x-1">
-                    <span>Press</span>
-                    <kbd className="px-1.5 py-0.5 text-xs font-mono bg-muted rounded border">Enter</kbd>
-                    <span>to send •</span>
-                    <kbd className="px-1.5 py-0.5 text-xs font-mono bg-muted rounded border">Shift</kbd>
-                    <span>+</span>
-                    <kbd className="px-1.5 py-0.5 text-xs font-mono bg-muted rounded border">Enter</kbd>
-                    <span>for new line</span>
-                  </div>
                 </div>
                 <Button
                   type="submit"
                   disabled={!messageInput.trim() || isStreaming}
-                  className="h-12 w-12 rounded-xl shadow-md bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex-shrink-0"
+className="h-12 w-12 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex-shrink-0"
                   size="icon"
                 >
                   <Send className="w-5 h-5" />
