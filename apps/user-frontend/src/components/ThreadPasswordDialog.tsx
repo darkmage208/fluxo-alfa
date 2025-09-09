@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
 import { Lock, Eye, EyeOff, Shield, Edit, Trash2, X } from 'lucide-react';
 
 interface ThreadPasswordDialogProps {
@@ -126,127 +125,96 @@ const ThreadPasswordDialog: React.FC<ThreadPasswordDialogProps> = ({
       case 'verify': return <Lock className="w-5 h-5 text-blue-500" />;
       case 'set': return <Shield className="w-5 h-5 text-green-500" />;
       case 'update': return <Edit className="w-5 h-5 text-orange-500" />;
-      case 'delete': return <Trash2 className="w-5 h-5 text-red-500" />;
+      case 'delete': return <Trash2 className="w-5 h-5 text-destructive" />;
       default: return <Lock className="w-5 h-5" />;
     }
   };
 
+  const getIconBackground = () => {
+    switch (mode) {
+      case 'verify': return 'bg-blue-100 dark:bg-blue-900/20';
+      case 'set': return 'bg-green-100 dark:bg-green-900/20';
+      case 'update': return 'bg-orange-100 dark:bg-orange-900/20';
+      case 'delete': return 'bg-destructive/10';
+      default: return 'bg-muted';
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <Card className="w-full max-w-md mx-4 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            {getIcon()}
-            <h2 className="text-lg font-semibold">{getTitle()}</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="w-full max-w-md mx-4 bg-card rounded-2xl border border-border shadow-2xl">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getIconBackground()}`}>
+                {getIcon()}
+              </div>
+              <h2 className="text-lg font-semibold text-foreground">{getTitle()}</h2>
+            </div>
+            <Button variant="ghost" size="sm" onClick={handleClose} className="h-8 w-8 p-0">
+              <X className="w-4 h-4" />
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleClose}>
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
 
-        {threadTitle && (
-          <p className="text-sm text-gray-600 mb-4">
-            Thread: <span className="font-medium">{threadTitle}</span>
-          </p>
-        )}
+          {threadTitle && (
+            <div className="mb-6 p-3 bg-muted/50 rounded-lg border">
+              <p className="text-sm text-muted-foreground">
+                Thread: <span className="font-medium text-foreground">{threadTitle}</span>
+              </p>
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-              <div className="flex items-center">
-                <svg className="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-                <div>
-                  <p className="text-sm font-medium text-red-800">Authentication Failed</p>
-                  <p className="text-sm text-red-600">{error}</p>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <div className="w-5 h-5 rounded-full bg-destructive flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <X className="w-3 h-3 text-destructive-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-destructive">Authentication Failed</p>
+                    <p className="text-sm text-muted-foreground mt-1">{error}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {mode === 'verify' && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Password</label>
-              <div className="relative">
-                <Input
-                  ref={passwordInputRef}
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter thread password"
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-2 top-1/2 -translate-y-1/2"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {mode === 'set' && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium">New Password</label>
-              <div className="relative">
-                <Input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter new password"
-                  maxLength={100}
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-2 top-1/2 -translate-y-1/2"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </Button>
-              </div>
-              <p className="text-xs text-gray-500">Max 100 characters</p>
-            </div>
-          )}
-
-          {mode === 'update' && (
-            <>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Current Password</label>
+            {mode === 'verify' && (
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">Password</label>
                 <div className="relative">
                   <Input
-                    type={showCurrentPassword ? 'text' : 'password'}
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="Enter current password"
+                    ref={passwordInputRef}
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter thread password"
+                    className="pr-10"
                     required
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="absolute right-2 top-1/2 -translate-y-1/2"
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                    onClick={() => setShowPassword(!showPassword)}
                   >
-                    {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </Button>
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">New Password</label>
+            )}
+
+            {mode === 'set' && (
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">New Password</label>
                 <div className="relative">
                   <Input
-                    type={showNewPassword ? 'text' : 'password'}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter new password"
+                    className="pr-10"
                     maxLength={100}
                     required
                   />
@@ -254,38 +222,95 @@ const ThreadPasswordDialog: React.FC<ThreadPasswordDialogProps> = ({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="absolute right-2 top-1/2 -translate-y-1/2"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                    onClick={() => setShowPassword(!showPassword)}
                   >
-                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </Button>
                 </div>
+                <p className="text-xs text-muted-foreground">Max 100 characters</p>
               </div>
-            </>
-          )}
+            )}
 
-          {mode === 'delete' && (
+          {mode === 'update' && (
             <>
-              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm text-red-600">
-                  This will remove the password protection from this thread. Anyone will be able to access it.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Current Password</label>
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">Current Password</label>
                 <div className="relative">
                   <Input
                     type={showCurrentPassword ? 'text' : 'password'}
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="Enter current password to confirm"
+                    placeholder="Enter current password"
+                    className="pr-10"
                     required
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="absolute right-2 top-1/2 -translate-y-1/2"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  >
+                    {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">New Password</label>
+                <div className="relative">
+                  <Input
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                    className="pr-10"
+                    maxLength={100}
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                  >
+                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Max 100 characters</p>
+              </div>
+            </>
+          )}
+
+          {mode === 'delete' && (
+            <>
+              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <div className="w-5 h-5 rounded-full bg-destructive flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Trash2 className="w-3 h-3 text-destructive-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    This will remove the password protection from this thread. Anyone will be able to access it.
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">Current Password</label>
+                <div className="relative">
+                  <Input
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Enter current password to confirm"
+                    className="pr-10"
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
                     onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                   >
                     {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -295,33 +320,39 @@ const ThreadPasswordDialog: React.FC<ThreadPasswordDialogProps> = ({
             </>
           )}
 
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className={`${
-                mode === 'delete' 
-                  ? 'bg-red-600 hover:bg-red-700' 
-                  : mode === 'set'
-                    ? 'bg-green-600 hover:bg-green-700'
-                    : mode === 'update'
-                      ? 'bg-orange-600 hover:bg-orange-700'
-                      : ''
-              }`}
-            >
-              {isLoading ? 'Processing...' : 
-                mode === 'verify' ? 'Unlock' :
-                mode === 'set' ? 'Set Password' :
-                mode === 'update' ? 'Update Password' :
-                mode === 'delete' ? 'Remove Password' : 'Submit'
-              }
-            </Button>
-          </div>
-        </form>
-      </Card>
+            <div className="flex justify-end space-x-3 pt-6">
+              <Button type="button" variant="outline" onClick={handleClose} className="px-6">
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className={`px-6 ${
+                  mode === 'delete' 
+                    ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground' 
+                    : mode === 'set'
+                      ? 'bg-green-600 hover:bg-green-700 text-white'
+                      : mode === 'update'
+                        ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                        : ''
+                }`}
+              >
+                {isLoading ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                    <span>Processing...</span>
+                  </div>
+                ) : (
+                  mode === 'verify' ? 'Unlock' :
+                  mode === 'set' ? 'Set Password' :
+                  mode === 'update' ? 'Update Password' :
+                  mode === 'delete' ? 'Remove Password' : 'Submit'
+                )}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   );
 };
