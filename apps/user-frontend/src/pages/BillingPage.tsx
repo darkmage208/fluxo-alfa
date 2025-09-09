@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { billingApi } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
-import { formatCurrency, formatDate } from '@/lib/utils';
-import { ArrowLeft, CreditCard, Crown, Check } from 'lucide-react';
+import { CurrentPlanCard, PlanComparisonCards, AccountInfoCard } from '@/components/billing';
+import { ArrowLeft } from 'lucide-react';
 
 const BillingPage = () => {
   const [subscription, setSubscription] = useState<any>(null);
@@ -92,197 +91,23 @@ const BillingPage = () => {
 
         <div className="grid md:grid-cols-2 gap-8">
           {/* Current Plan */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <CreditCard className="w-5 h-5 mr-2" />
-                Current Plan
-              </CardTitle>
-              <CardDescription>Your active subscription details</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">Plan:</span>
-                  <div className="flex items-center">
-                    {isPro && <Crown className="w-4 h-4 mr-1 text-yellow-500" />}
-                    <span className={`font-semibold ${isPro ? 'text-yellow-600' : 'text-gray-600'}`}>
-                      {subscription?.plan?.id === 'pro' ? 'Pro' : 'Free'}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">Status:</span>
-                  <span className={`font-semibold ${
-                    subscription?.status === 'active' ? 'text-green-600' : 
-                    isCanceled ? 'text-red-600' : 'text-yellow-600'
-                  }`}>
-                    {subscription?.status === 'active' ? 'Active' :
-                     isCanceled ? 'Canceled' : subscription?.status || 'Free'}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">Daily Chat Limit:</span>
-                  <span className="font-semibold">
-                    {subscription?.plan?.dailyChatLimit || 'Unlimited'}
-                  </span>
-                </div>
-
-                {subscription?.currentPeriodEnd && (
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">
-                      {isCanceled ? 'Ends on:' : 'Renews on:'}
-                    </span>
-                    <span className="font-semibold">
-                      {formatDate(subscription.currentPeriodEnd)}
-                    </span>
-                  </div>
-                )}
-
-                <div className="pt-4 border-t">
-                  {isPro ? (
-                    <div className="space-y-2">
-                      <Button
-                        onClick={handleManageBilling}
-                        className="w-full"
-                      >
-                        Manage Billing
-                      </Button>
-                      {!isCanceled && (
-                        <Button
-                          variant="outline"
-                          onClick={handleCancelSubscription}
-                          className="w-full"
-                        >
-                          Cancel Subscription
-                        </Button>
-                      )}
-                    </div>
-                  ) : (
-                    <Link to="/payment">
-                      <Button className="w-full">
-                        <Crown className="w-4 h-4 mr-2" />
-                        Upgrade to Pro
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <CurrentPlanCard
+            subscription={subscription}
+            isPro={isPro}
+            isCanceled={isCanceled}
+            onManageBilling={handleManageBilling}
+            onCancelSubscription={handleCancelSubscription}
+          />
 
           {/* Plan Comparison */}
-          <div className="space-y-4">
-            {/* Free Plan */}
-            <Card className={subscription?.plan?.id === 'free' ? 'ring-2 ring-blue-500' : ''}>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Free Plan</span>
-                  {subscription?.plan?.id === 'free' && (
-                    <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded">
-                      Current
-                    </span>
-                  )}
-                </CardTitle>
-                <CardDescription>Perfect for getting started</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center">
-                    <Check className="w-4 h-4 mr-2 text-green-500" />
-                    <span>10 chats per day</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Check className="w-4 h-4 mr-2 text-green-500" />
-                    <span>AI-powered responses</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Check className="w-4 h-4 mr-2 text-green-500" />
-                    <span>RAG context search</span>
-                  </div>
-                  <div className="pt-4">
-                    <div className="text-2xl font-bold">Free</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Pro Plan */}
-            <Card className={isPro ? 'ring-2 ring-yellow-500' : ''}>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Crown className="w-5 h-5 mr-2 text-yellow-500" />
-                    <span>Pro Plan</span>
-                  </div>
-                  {isPro && (
-                    <span className="text-xs bg-yellow-500 text-white px-2 py-1 rounded">
-                      Current
-                    </span>
-                  )}
-                </CardTitle>
-                <CardDescription>For power users</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center">
-                    <Check className="w-4 h-4 mr-2 text-green-500" />
-                    <span>Unlimited chats</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Check className="w-4 h-4 mr-2 text-green-500" />
-                    <span>Priority support</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Check className="w-4 h-4 mr-2 text-green-500" />
-                    <span>Advanced AI features</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Check className="w-4 h-4 mr-2 text-green-500" />
-                    <span>Enhanced RAG capabilities</span>
-                  </div>
-                  <div className="pt-4">
-                    <div className="text-2xl font-bold">
-                      $36
-                      <span className="text-sm font-normal text-gray-500">/month</span>
-                      <div className="text-sm text-gray-600">R$197</div>
-                    </div>
-                  </div>
-                  {!isPro && (
-                    <Link to="/payment">
-                      <Button className="w-full mt-4">
-                        <Crown className="w-4 h-4 mr-2" />
-                        Upgrade Now
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <PlanComparisonCards
+            subscription={subscription}
+            isPro={isPro}
+          />
         </div>
 
         {/* Account Info */}
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle>Account Information</CardTitle>
-            <CardDescription>Your account details</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <span className="font-medium">Email:</span>
-                <span className="ml-2">{user?.email}</span>
-              </div>
-              <div>
-                <span className="font-medium">Account created:</span>
-                <span className="ml-2">{formatDate(user?.createdAt || new Date())}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <AccountInfoCard user={user} />
       </div>
     </div>
   );
