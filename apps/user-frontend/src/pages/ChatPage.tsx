@@ -711,9 +711,10 @@ const ChatPage = () => {
         {currentThread ? (
           <>
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {/* Load more messages trigger */}
-              {hasMoreMessages && (
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="max-w-6xl mx-auto space-y-6">
+                {/* Load more messages trigger */}
+                {hasMoreMessages && (
                 <div ref={loadMoreRef} className="flex justify-center py-3">
                   {isLoadingMoreMessages ? (
                     <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
@@ -723,10 +724,10 @@ const ChatPage = () => {
                   ) : (
                     <div className="text-sm text-muted-foreground/70">Scroll up for more messages</div>
                   )}
-                </div>
-              )}
-              
-              {messages.map((message) => (
+                  </div>
+                )}
+                
+                {messages.map((message) => (
                 <div
                   key={message.id}
                   className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -774,10 +775,10 @@ const ChatPage = () => {
                     </div>
                   </div>
                 </div>
-              ))}
-              
-              {/* Typing Indicator or Streaming Message */}
-              {isStreaming && (
+                ))}
+                
+                {/* Typing Indicator or Streaming Message */}
+                {isStreaming && (
                 <div className="flex justify-start">
                   <div className="flex items-start space-x-3 max-w-[75%]">
                     <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 text-white flex items-center justify-center shadow-sm ring-2 ring-purple-200 dark:ring-purple-800 ring-offset-2 ring-offset-background">
@@ -800,16 +801,18 @@ const ChatPage = () => {
                       )}
                     </div>
                   </div>
-                </div>
-              )}
-              
-              {/* Auto-scroll anchor */}
-              <div ref={messagesEndRef} />
+                  </div>
+                )}
+                
+                {/* Auto-scroll anchor */}
+                <div ref={messagesEndRef} />
+              </div>
             </div>
 
             {/* Message Input */}
             <div className="border-t border-border bg-card/50 backdrop-blur-sm p-6">
-              <form onSubmit={handleSendMessage} className="flex items-end space-x-4">
+              <div className="max-w-6xl mx-auto">
+                <form onSubmit={handleSendMessage} className="flex items-end space-x-4">
                 <div className="flex-1 relative">
                   <div className="relative rounded-2xl border border-border bg-background/80 backdrop-blur-sm shadow-sm transition-all duration-200 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary">
                     <textarea
@@ -844,8 +847,9 @@ const ChatPage = () => {
                   size="icon"
                 >
                   <Send className="w-5 h-5" />
-                </Button>
-              </form>
+                  </Button>
+                </form>
+              </div>
             </div>
           </>
         ) : (
