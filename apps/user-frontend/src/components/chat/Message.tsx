@@ -12,9 +12,13 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
   return (
     <div className={`flex w-full ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`flex items-start space-x-3 w-full max-w-[min(75%,600px)] min-w-[280px] ${
+        className={`flex items-start space-x-3 w-full ${
           message.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''
         }`}
+        style={{
+          maxWidth: 'min(600px, max(90vw, 320px))',
+          minWidth: '320px'
+        }}
       >
         <div
           className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center shadow-sm ring-2 ring-offset-2 ring-offset-background ${

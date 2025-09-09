@@ -15,7 +15,8 @@ import {
   Lock,
   Shield,
   MoreVertical,
-  Trash2
+  Trash2,
+  ChevronRight
 } from 'lucide-react';
 import { ThreadList } from './ThreadList';
 import { CollapsedThreadList } from './CollapsedThreadList';
@@ -68,6 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleCollapse,
 }) => {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [isLogoHovered, setIsLogoHovered] = useState(false);
 
   return (
     <div 
@@ -79,14 +81,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between mb-4">
           <div 
-            className={`flex items-center space-x-3 ${
-              isCollapsed ? 'cursor-pointer' : ''
+            className={`flex items-center space-x-3 transition-all duration-200 ${
+              isCollapsed ? 'cursor-pointer hover:bg-accent/50 rounded-lg p-1 -m-1' : ''
             }`}
             onClick={isCollapsed && onToggleCollapse ? onToggleCollapse : undefined}
+            onMouseEnter={() => setIsLogoHovered(true)}
+            onMouseLeave={() => setIsLogoHovered(false)}
             title={isCollapsed ? 'Expand sidebar' : undefined}
           >
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <MessageCircle className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center transition-all duration-200">
+              {isCollapsed && isLogoHovered ? (
+                <ChevronRight className="w-4 h-4 text-white" />
+              ) : (
+                <MessageCircle className="w-4 h-4 text-white" />
+              )}
             </div>
             {!isCollapsed && (
               <h1 className="text-xl font-semibold text-foreground">Fluxo Alfa</h1>

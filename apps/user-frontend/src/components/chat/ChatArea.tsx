@@ -134,7 +134,13 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               {isStreaming && (
                 <div className="w-full">
                   <div className="flex justify-start">
-                    <div className="flex items-start space-x-3 w-full max-w-[min(75%,600px)] min-w-[280px]">
+                    <div 
+                      className="flex items-start space-x-3 w-full"
+                      style={{
+                        maxWidth: 'min(600px, max(90vw, 320px))',
+                        minWidth: '320px'
+                      }}
+                    >
                       <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 text-white flex items-center justify-center shadow-sm ring-2 ring-purple-200 dark:ring-purple-800 ring-offset-2 ring-offset-background">
                         <Bot className="w-4 h-4" />
                       </div>

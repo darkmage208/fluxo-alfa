@@ -248,6 +248,9 @@ const ChatPage = () => {
       const { threadId } = passwordDialog;
       await chatApi.setThreadPassword(threadId, password);
       
+      // Store the password locally to avoid immediate re-prompt
+      setThreadPasswords(prev => new Map(prev).set(threadId, password));
+      
       // Update threads list to reflect password status
       await loadThreads();
       

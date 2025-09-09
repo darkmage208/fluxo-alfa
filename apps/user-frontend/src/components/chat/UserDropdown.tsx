@@ -60,7 +60,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
               className="fixed inset-0 z-10" 
               onClick={() => setShowUserDropdown(false)}
             />
-            <div className="absolute left-0 bottom-full mb-2 w-56 bg-popover rounded-lg shadow-lg border border-border z-20 overflow-hidden">
+            <div className="absolute left-0 bottom-full mb-2 w-56 bg-popover rounded-lg shadow-lg border border-border z-30 overflow-hidden">
               <div className="py-1">
                 <Link 
                   to="/billing" 
@@ -90,10 +90,10 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
                   {showThemeMenu && (
                     <>
                       <div 
-                        className="fixed inset-0 z-30" 
+                        className="fixed inset-0 z-40" 
                         onClick={() => setShowThemeMenu(false)}
                       />
-                      <div className="absolute left-full top-0 ml-1 w-40 bg-popover rounded-lg shadow-lg border border-border z-40 overflow-hidden">
+                      <div className="absolute left-full top-0 ml-1 w-40 bg-popover rounded-lg shadow-lg border border-border z-50 overflow-hidden">
                         <div className="py-1">
                           <button
                             onClick={() => {
