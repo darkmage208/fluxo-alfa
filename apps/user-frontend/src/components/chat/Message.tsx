@@ -10,9 +10,9 @@ interface MessageProps {
 
 export const Message: React.FC<MessageProps> = ({ message }) => {
   return (
-    <div className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex w-full ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`flex items-start space-x-3 max-w-[75%] ${
+        className={`flex items-start space-x-3 w-full max-w-[min(75%,600px)] min-w-[280px] ${
           message.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''
         }`}
       >
@@ -30,7 +30,7 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
           )}
         </div>
         <div
-          className={`rounded-2xl shadow-sm border backdrop-blur-sm ${
+          className={`rounded-2xl shadow-sm border backdrop-blur-sm flex-1 ${
             message.role === 'user'
               ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white border-blue-200/50 shadow-blue-200/25'
               : 'bg-card/95 border-border shadow-md'

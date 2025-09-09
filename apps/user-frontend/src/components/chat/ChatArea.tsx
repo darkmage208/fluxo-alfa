@@ -106,8 +106,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       {currentThread ? (
         <>
           {/* Messages */}
-          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-6xl mx-auto space-y-6">
+          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6">
+            <div className="w-full max-w-4xl mx-auto space-y-6" style={{ minWidth: '320px' }}>
               {/* Load more messages trigger */}
               {hasMoreMessages && (
                 <div ref={loadMoreRef} className="flex justify-center py-3">
@@ -122,32 +122,38 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 </div>
               )}
               
-              {messages.map((message) => (
-                <Message key={message.id} message={message} />
-              ))}
+              <div className="space-y-6">
+                {messages.map((message) => (
+                  <div key={message.id} className="w-full">
+                    <Message message={message} />
+                  </div>
+                ))}
+              </div>
               
               {/* Typing Indicator or Streaming Message */}
               {isStreaming && (
-                <div className="flex justify-start">
-                  <div className="flex items-start space-x-3 max-w-[75%]">
-                    <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 text-white flex items-center justify-center shadow-sm ring-2 ring-purple-200 dark:ring-purple-800 ring-offset-2 ring-offset-background">
-                      <Bot className="w-4 h-4" />
-                    </div>
-                    <div className="rounded-2xl shadow-md border border-border bg-card/95 backdrop-blur-sm">
-                      {streamingMessage ? (
-                        <div className="px-4 py-3">
-                          <StreamingMarkdownRenderer 
-                            content={streamingMessage} 
-                            className="text-sm leading-relaxed text-foreground" 
-                            isStreaming={true}
-                          />
-                          <span className="inline-block w-1 h-4 bg-primary animate-pulse ml-1 rounded-full"></span>
-                        </div>
-                      ) : (
-                        <div className="px-4 py-3">
-                          <TypingIndicator />
-                        </div>
-                      )}
+                <div className="w-full">
+                  <div className="flex justify-start">
+                    <div className="flex items-start space-x-3 w-full max-w-[min(75%,600px)] min-w-[280px]">
+                      <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 text-white flex items-center justify-center shadow-sm ring-2 ring-purple-200 dark:ring-purple-800 ring-offset-2 ring-offset-background">
+                        <Bot className="w-4 h-4" />
+                      </div>
+                      <div className="rounded-2xl shadow-md border border-border bg-card/95 backdrop-blur-sm flex-1">
+                        {streamingMessage ? (
+                          <div className="px-4 py-3">
+                            <StreamingMarkdownRenderer 
+                              content={streamingMessage} 
+                              className="text-sm leading-relaxed text-foreground" 
+                              isStreaming={true}
+                            />
+                            <span className="inline-block w-1 h-4 bg-primary animate-pulse ml-1 rounded-full"></span>
+                          </div>
+                        ) : (
+                          <div className="px-4 py-3">
+                            <TypingIndicator />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -159,12 +165,16 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           </div>
 
           {/* Message Input */}
-          <MessageInput
-            messageInput={messageInput}
-            setMessageInput={setMessageInput}
-            onSendMessage={onSendMessage}
-            isStreaming={isStreaming}
-          />
+          <div className="border-t border-border bg-card/50 backdrop-blur-sm p-4 sm:p-6">
+            <div className="w-full max-w-4xl mx-auto" style={{ minWidth: '320px' }}>
+              <MessageInput
+                messageInput={messageInput}
+                setMessageInput={setMessageInput}
+                onSendMessage={onSendMessage}
+                isStreaming={isStreaming}
+              />
+            </div>
+          </div>
         </>
       ) : (
         <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20">

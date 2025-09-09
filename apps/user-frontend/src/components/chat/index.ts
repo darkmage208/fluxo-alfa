@@ -1,5 +1,6 @@
 export { Sidebar } from './Sidebar';
 export { ThreadList } from './ThreadList';
+export { CollapsedThreadList } from './CollapsedThreadList';
 export { UserDropdown } from './UserDropdown';
 export { Message } from './Message';
 export { MessageInput } from './MessageInput';

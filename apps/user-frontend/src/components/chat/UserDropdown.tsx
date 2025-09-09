@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -7,9 +7,11 @@ import {
   CreditCard,
   LogOut,
   ChevronDown,
+  ChevronRight,
   Sun,
   Moon,
-  Monitor
+  Monitor,
+  Palette
 } from 'lucide-react';
 
 interface UserDropdownProps {
@@ -25,7 +27,16 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
   setShowUserDropdown,
   onLogout,
 }) => {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, actualTheme } = useTheme();
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
+
+  const getThemeIcon = () => {
+    if (theme === 'light') return Sun;
+    if (theme === 'dark') return Moon;
+    return Monitor;
+  };
+
+  const ThemeIcon = getThemeIcon();
   return (
     <div className="p-4 border-t border-border">
       <div className="relative">
@@ -60,47 +71,73 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
                   Billing & Subscription
                 </Link>
                 
-                {/* Theme Selection */}
-                <div className="px-2 py-1">
-                  <div className="text-xs font-medium text-muted-foreground px-2 py-1">Theme</div>
-                  <div className="space-y-1">
-                    <button
-                      onClick={() => {
-                        setTheme('light');
-                        setShowUserDropdown(false);
-                      }}
-                      className={`flex items-center w-full px-2 py-2 text-sm hover:bg-accent rounded-md transition-colors ${
-                        theme === 'light' ? 'bg-accent text-accent-foreground' : 'text-popover-foreground'
-                      }`}
-                    >
-                      <Sun className="w-4 h-4 mr-3" />
-                      Light
-                    </button>
-                    <button
-                      onClick={() => {
-                        setTheme('dark');
-                        setShowUserDropdown(false);
-                      }}
-                      className={`flex items-center w-full px-2 py-2 text-sm hover:bg-accent rounded-md transition-colors ${
-                        theme === 'dark' ? 'bg-accent text-accent-foreground' : 'text-popover-foreground'
-                      }`}
-                    >
-                      <Moon className="w-4 h-4 mr-3" />
-                      Dark
-                    </button>
-                    <button
-                      onClick={() => {
-                        setTheme('system');
-                        setShowUserDropdown(false);
-                      }}
-                      className={`flex items-center w-full px-2 py-2 text-sm hover:bg-accent rounded-md transition-colors ${
-                        theme === 'system' ? 'bg-accent text-accent-foreground' : 'text-popover-foreground'
-                      }`}
-                    >
-                      <Monitor className="w-4 h-4 mr-3" />
-                      System
-                    </button>
-                  </div>
+                {/* Theme Selection with Sub-dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowThemeMenu(!showThemeMenu)}
+                    className="flex items-center justify-between w-full px-4 py-3 text-sm hover:bg-accent text-popover-foreground transition-colors"
+                  >
+                    <div className="flex items-center">
+                      <Palette className="w-4 h-4 mr-3" />
+                      Theme
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <ThemeIcon className="w-4 h-4" />
+                      <ChevronRight className="w-3 h-3" />
+                    </div>
+                  </button>
+                  
+                  {showThemeMenu && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-30" 
+                        onClick={() => setShowThemeMenu(false)}
+                      />
+                      <div className="absolute left-full top-0 ml-1 w-40 bg-popover rounded-lg shadow-lg border border-border z-40 overflow-hidden">
+                        <div className="py-1">
+                          <button
+                            onClick={() => {
+                              setTheme('light');
+                              setShowThemeMenu(false);
+                              setShowUserDropdown(false);
+                            }}
+                            className={`flex items-center w-full px-3 py-2 text-sm hover:bg-accent transition-colors ${
+                              theme === 'light' ? 'bg-accent text-accent-foreground' : 'text-popover-foreground'
+                            }`}
+                          >
+                            <Sun className="w-4 h-4 mr-3" />
+                            Light
+                          </button>
+                          <button
+                            onClick={() => {
+                              setTheme('dark');
+                              setShowThemeMenu(false);
+                              setShowUserDropdown(false);
+                            }}
+                            className={`flex items-center w-full px-3 py-2 text-sm hover:bg-accent transition-colors ${
+                              theme === 'dark' ? 'bg-accent text-accent-foreground' : 'text-popover-foreground'
+                            }`}
+                          >
+                            <Moon className="w-4 h-4 mr-3" />
+                            Dark
+                          </button>
+                          <button
+                            onClick={() => {
+                              setTheme('system');
+                              setShowThemeMenu(false);
+                              setShowUserDropdown(false);
+                            }}
+                            className={`flex items-center w-full px-3 py-2 text-sm hover:bg-accent transition-colors ${
+                              theme === 'system' ? 'bg-accent text-accent-foreground' : 'text-popover-foreground'
+                            }`}
+                          >
+                            <Monitor className="w-4 h-4 mr-3" />
+                            System
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
                 
                 <div className="h-px bg-border mx-2 my-1"></div>

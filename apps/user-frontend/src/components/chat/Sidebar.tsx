@@ -18,6 +18,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { ThreadList } from './ThreadList';
+import { CollapsedThreadList } from './CollapsedThreadList';
 import { UserDropdown } from './UserDropdown';
 import { SidebarToggle } from './SidebarToggle';
 
@@ -77,7 +78,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
+          <div 
+            className={`flex items-center space-x-3 ${
+              isCollapsed ? 'cursor-pointer' : ''
+            }`}
+            onClick={isCollapsed && onToggleCollapse ? onToggleCollapse : undefined}
+            title={isCollapsed ? 'Expand sidebar' : undefined}
+          >
             <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
               <MessageCircle className="w-4 h-4 text-white" />
             </div>
@@ -85,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <h1 className="text-xl font-semibold text-foreground">Fluxo Alfa</h1>
             )}
           </div>
-          {onToggleCollapse && (
+          {!isCollapsed && onToggleCollapse && (
             <SidebarToggle
               isCollapsed={isCollapsed}
               onToggle={onToggleCollapse}
@@ -93,18 +100,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
         <Button
-          className="w-full"
+          className={isCollapsed ? "w-8 h-8 p-0 mx-auto" : "w-full"}
           onClick={onCreateThread}
           disabled={isLoading}
           title={isCollapsed ? 'New Chat' : undefined}
         >
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus className={`w-4 h-4 ${!isCollapsed ? 'mr-2' : ''}`} />
           {!isCollapsed && 'New Chat'}
         </Button>
       </div>
 
       {/* Threads List */}
-      {!isCollapsed && (
+      {isCollapsed ? (
+        <CollapsedThreadList
+          threads={threads}
+          currentThread={currentThread}
+          isLoading={isLoading}
+          onThreadClick={onThreadClick}
+        />
+      ) : (
         <ThreadList
           threads={threads}
           currentThread={currentThread}
@@ -124,57 +138,61 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       {/* User Dropdown */}
-      {!isCollapsed ? (
-        <UserDropdown
-          user={user}
-          showUserDropdown={showUserDropdown}
-          setShowUserDropdown={setShowUserDropdown}
-          onLogout={onLogout}
-        />
-      ) : (
-        <div className="p-4 border-t border-border">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowUserDropdown(!showUserDropdown)}
-            className="w-8 h-8 p-0 mx-auto"
-            title="User menu"
-          >
-            <User className="w-4 h-4" />
-          </Button>
-          {showUserDropdown && (
-            <>
-              <div 
-                className="fixed inset-0 z-10" 
-                onClick={() => setShowUserDropdown(false)}
-              />
-              <div className="absolute left-16 bottom-4 w-56 bg-popover rounded-lg shadow-lg border border-border z-20 overflow-hidden">
-                <div className="py-1">
-                  <Link 
-                    to="/billing" 
-                    className="flex items-center px-4 py-3 text-sm hover:bg-accent text-popover-foreground transition-colors"
-                    onClick={() => setShowUserDropdown(false)}
-                  >
-                    <CreditCard className="w-4 h-4 mr-3" />
-                    Billing & Subscription
-                  </Link>
-                  <div className="h-px bg-border mx-2 my-1"></div>
-                  <button
-                    onClick={() => {
-                      setShowUserDropdown(false);
-                      onLogout();
-                    }}
-                    className="flex items-center w-full px-4 py-3 text-sm hover:bg-destructive/10 text-destructive transition-colors"
-                  >
-                    <LogOut className="w-4 h-4 mr-3" />
-                    Sign out
-                  </button>
-                </div>
+      <div className="mt-auto">
+        {!isCollapsed ? (
+          <UserDropdown
+            user={user}
+            showUserDropdown={showUserDropdown}
+            setShowUserDropdown={setShowUserDropdown}
+            onLogout={onLogout}
+          />
+        ) : (
+          <div className="p-4 border-t border-border">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowUserDropdown(!showUserDropdown)}
+              className="w-8 h-8 p-0 mx-auto relative"
+              title="User menu"
+            >
+              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                <User className="w-3 h-3 text-white" />
               </div>
-            </>
-          )}
-        </div>
-      )}
+            </Button>
+            {showUserDropdown && (
+              <>
+                <div 
+                  className="fixed inset-0 z-10" 
+                  onClick={() => setShowUserDropdown(false)}
+                />
+                <div className="absolute left-16 bottom-4 w-56 bg-popover rounded-lg shadow-lg border border-border z-20 overflow-hidden">
+                  <div className="py-1">
+                    <Link 
+                      to="/billing" 
+                      className="flex items-center px-4 py-3 text-sm hover:bg-accent text-popover-foreground transition-colors"
+                      onClick={() => setShowUserDropdown(false)}
+                    >
+                      <CreditCard className="w-4 h-4 mr-3" />
+                      Billing & Subscription
+                    </Link>
+                    <div className="h-px bg-border mx-2 my-1"></div>
+                    <button
+                      onClick={() => {
+                        setShowUserDropdown(false);
+                        onLogout();
+                      }}
+                      className="flex items-center w-full px-4 py-3 text-sm hover:bg-destructive/10 text-destructive transition-colors"
+                    >
+                      <LogOut className="w-4 h-4 mr-3" />
+                      Sign out
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

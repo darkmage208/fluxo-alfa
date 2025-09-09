@@ -49,37 +49,33 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   }, [isStreaming]);
 
   return (
-    <div className="border-t border-border bg-card/50 backdrop-blur-sm p-6">
-      <div className="max-w-6xl mx-auto">
-        <form onSubmit={onSendMessage} className="flex items-end space-x-4">
-          <div className="flex-1 relative">
-            <div className="relative rounded-2xl border border-border bg-background/80 backdrop-blur-sm shadow-sm transition-all duration-200 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary">
-              <textarea
-                ref={textareaRef}
-                value={messageInput}
-                onChange={(e) => {
-                  setMessageInput(e.target.value);
-                  autoResizeTextarea();
-                }}
-                onKeyDown={handleTextareaKeyDown}
-                placeholder="Type your message..."
-                disabled={isStreaming}
-                className="w-full p-4 bg-transparent resize-none focus:outline-none placeholder:text-muted-foreground text-foreground disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl"
-                style={{ minHeight: '52px', maxHeight: '200px' }}
-                rows={1}
-              />
-            </div>
-          </div>
-          <Button
-            type="submit"
-            disabled={!messageInput.trim() || isStreaming}
-            className="h-12 w-12 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex-shrink-0"
-            size="icon"
-          >
-            <Send className="w-5 h-5" />
-          </Button>
-        </form>
+    <form onSubmit={onSendMessage} className="flex items-end space-x-3 sm:space-x-4">
+      <div className="flex-1 relative">
+        <div className="relative rounded-2xl border border-border bg-background/80 backdrop-blur-sm shadow-sm transition-all duration-200 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary">
+          <textarea
+            ref={textareaRef}
+            value={messageInput}
+            onChange={(e) => {
+              setMessageInput(e.target.value);
+              autoResizeTextarea();
+            }}
+            onKeyDown={handleTextareaKeyDown}
+            placeholder="Type your message..."
+            disabled={isStreaming}
+            className="w-full p-3 sm:p-4 bg-transparent resize-none focus:outline-none placeholder:text-muted-foreground text-foreground disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl text-sm sm:text-base"
+            style={{ minHeight: '48px', maxHeight: '180px' }}
+            rows={1}
+          />
+        </div>
       </div>
-    </div>
+      <Button
+        type="submit"
+        disabled={!messageInput.trim() || isStreaming}
+        className="h-12 w-12 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex-shrink-0"
+        size="icon"
+      >
+        <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+      </Button>
+    </form>
   );
 };

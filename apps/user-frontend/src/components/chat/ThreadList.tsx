@@ -144,7 +144,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                             className="flex items-center w-full px-3 py-2 text-sm hover:bg-accent text-popover-foreground transition-colors"
                           >
                             <Edit3 className="w-4 h-4 mr-2" />
-                            Rename Thread
+                            Rename
                           </button>
                           
                           {thread.hasPassword ? (
@@ -163,7 +163,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                                 className="flex items-center w-full px-3 py-2 text-sm hover:bg-accent text-popover-foreground transition-colors"
                               >
                                 <Lock className="w-4 h-4 mr-2" />
-                                Update Password
+                                Change Password
                               </button>
                               <button
                                 onClick={(e) => {
@@ -179,7 +179,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                                 className="flex items-center w-full px-3 py-2 text-sm hover:bg-accent text-popover-foreground transition-colors"
                               >
                                 <Trash2 className="w-4 h-4 mr-2" />
-                                Remove Password
+                                Remove Protection
                               </button>
                             </>
                           ) : (
@@ -197,7 +197,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                               className="flex items-center w-full px-3 py-2 text-sm hover:bg-accent text-popover-foreground transition-colors"
                             >
                               <Shield className="w-4 h-4 mr-2" />
-                              Set Password
+                              Add Protection
                             </button>
                           )}
                           
@@ -211,7 +211,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                             className="flex items-center w-full px-3 py-2 text-sm hover:bg-destructive/10 text-destructive transition-colors"
                           >
                             <Trash2 className="w-4 h-4 mr-2" />
-                            Delete Thread
+                            Delete
                           </button>
                         </div>
                       </div>
