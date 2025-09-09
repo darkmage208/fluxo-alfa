@@ -370,6 +370,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
                   };
                 });
                 
+                // Reload threads to get updated title from server
+                // This ensures the frontend reflects any title changes made by the backend
+                get().loadThreads();
+                
                 // Reset accumulator for next message
                 streamingContent = '';
               } else if (parsed.type === 'error') {

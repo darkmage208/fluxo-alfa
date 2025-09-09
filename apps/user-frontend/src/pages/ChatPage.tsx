@@ -109,6 +109,18 @@ const ChatPage = () => {
     autoResizeTextarea();
   }, [messageInput]);
 
+  // Auto-focus input field when streaming ends
+  useEffect(() => {
+    if (!isStreaming && textareaRef.current) {
+      // Use a small delay to ensure the DOM has updated
+      const timer = setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isStreaming]);
+
   // Get current thread's cache data for infinite scroll
   const currentThreadCache = currentThread ? messageCache.get(currentThread.id) : null;
   const hasMoreMessages = currentThreadCache?.hasMore || false;
@@ -141,6 +153,10 @@ const ChatPage = () => {
   const handleCreateThread = async () => {
     try {
       await createThread();
+      // Focus the input field after creating a new thread
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 100);
     } catch (error: any) {
       toast({
         title: "Failed to create thread",
@@ -443,6 +459,11 @@ const ChatPage = () => {
       // Set current thread with password if available
       const password = threadPasswords.get(thread.id);
       await setCurrentThread(thread, password);
+      
+      // Focus the input field after switching threads
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 100);
     } catch (error: any) {
       // If 403, prompt for password
       if (error.response?.status === 403) {
