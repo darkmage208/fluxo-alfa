@@ -48,34 +48,36 @@ export const ThreadList: React.FC<ThreadListProps> = ({
   return (
     <div className="flex-1 overflow-y-auto">
       {isLoading ? (
-        <div className="p-4 text-center text-muted-foreground">
-          <div className="flex items-center justify-center space-x-2">
+        <div className="p-6 text-center text-muted-foreground">
+          <div className="flex items-center justify-center space-x-3">
             <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-            <span>Loading conversations...</span>
+            <span className="text-sm">Loading conversations...</span>
           </div>
         </div>
       ) : threads.length === 0 ? (
         <div className="p-8 text-center">
-          <MessageCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground font-medium">No conversations yet</p>
-          <p className="text-sm text-muted-foreground mt-1">Start a new chat to begin!</p>
+          <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <MessageCircle className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <p className="text-foreground font-medium mb-1">No conversations yet</p>
+          <p className="text-sm text-muted-foreground">Start a new chat to begin!</p>
         </div>
       ) : (
-        <div className="p-3 space-y-2">
+        <div className="p-2 space-y-1">
           {threads.map((thread) => (
             <div
               key={thread.id}
-              className={`group flex items-center p-3 rounded-xl cursor-pointer transition-all duration-200 ${
+              className={`group flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 ${
                 currentThread?.id === thread.id
                   ? 'bg-primary/10 border border-primary/20 shadow-sm'
-                  : 'hover:bg-accent/50'
+                  : 'hover:bg-accent/50 border border-transparent'
               }`}
               onClick={() => onThreadClick(thread)}
             >
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 flex-shrink-0 ${
+              <div className={`w-8 h-8 rounded-md flex items-center justify-center mr-3 flex-shrink-0 transition-all duration-200 ${
                 currentThread?.id === thread.id 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'bg-muted text-muted-foreground'
+                  ? 'bg-primary text-primary-foreground shadow-sm' 
+                  : 'bg-muted/80 text-muted-foreground group-hover:bg-muted'
               }`}>
                 <MessageCircle className="w-4 h-4" />
               </div>
@@ -108,15 +110,15 @@ export const ThreadList: React.FC<ThreadListProps> = ({
               </div>
               <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
                 {thread.hasPassword && (
-                  <div className="flex items-center justify-center w-6 h-6 rounded-md bg-blue-100 dark:bg-blue-900/30">
-                    <Lock className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                  <div className="flex items-center justify-center w-6 h-6 rounded-md bg-primary/10">
+                    <Lock className="w-3 h-3 text-primary" />
                   </div>
                 )}
                 <div className="relative">
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-8 w-8 p-0 hover:bg-accent"
+                    className="h-8 w-8 p-0 hover:bg-accent/50 transition-all duration-200"
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowThreadMenu(showThreadMenu === thread.id ? null : thread.id);
@@ -133,7 +135,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                         className="fixed inset-0 z-10" 
                         onClick={() => setShowThreadMenu(null)}
                       />
-                      <div className="absolute right-0 top-full mt-1 w-48 bg-popover rounded-lg shadow-lg border border-border z-20 overflow-hidden">
+                      <div className="absolute right-0 top-full mt-1 w-48 bg-popover/95 backdrop-blur-sm rounded-lg shadow-lg border border-border/50 z-20 overflow-hidden">
                         <div className="py-1">
                           <button
                             onClick={(e) => {
@@ -141,7 +143,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                               setShowThreadMenu(null);
                               onEditThread(thread.id, thread.title || '');
                             }}
-                            className="flex items-center w-full px-3 py-2 text-sm hover:bg-accent text-popover-foreground transition-colors"
+                            className="flex items-center w-full px-3 py-2 text-sm hover:bg-accent/50 text-popover-foreground transition-colors"
                           >
                             <Edit3 className="w-4 h-4 mr-2" />
                             Rename
@@ -160,7 +162,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                                     true
                                   );
                                 }}
-                                className="flex items-center w-full px-3 py-2 text-sm hover:bg-accent text-popover-foreground transition-colors"
+                                className="flex items-center w-full px-3 py-2 text-sm hover:bg-accent/50 text-popover-foreground transition-colors"
                               >
                                 <Lock className="w-4 h-4 mr-2" />
                                 Change Password
@@ -176,7 +178,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                                     true
                                   );
                                 }}
-                                className="flex items-center w-full px-3 py-2 text-sm hover:bg-accent text-popover-foreground transition-colors"
+                                className="flex items-center w-full px-3 py-2 text-sm hover:bg-accent/50 text-popover-foreground transition-colors"
                               >
                                 <Trash2 className="w-4 h-4 mr-2" />
                                 Remove Protection

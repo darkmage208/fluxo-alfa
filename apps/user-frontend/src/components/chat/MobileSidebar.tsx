@@ -69,7 +69,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
   return (
     <>
       <div 
-        className="fixed inset-0 z-40 bg-black/50 sm:hidden" 
+        className="fixed inset-0 z-40 bg-black/50 md:hidden" 
         onClick={onClose}
       />
       <div className="fixed left-0 top-0 z-50 w-80 h-full bg-card border-r border-border flex flex-col shadow-xl sm:hidden">
