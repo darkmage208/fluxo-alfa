@@ -55,7 +55,27 @@ const ChatPage = () => {
   const [threadPasswords, setThreadPasswords] = useState<Map<string, string>>(new Map());
   const [showThreadMenu, setShowThreadMenu] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
+
+  // Auto-resize textarea function
+  const autoResizeTextarea = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px'; // Max 200px height
+    }
+  };
+
+  // Handle textarea key press
+  const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault(); // Prevent default Enter behavior (new line)
+      if (!isStreaming && messageInput.trim()) {
+        handleSendMessage(e as any);
+      }
+    }
+  };
   const { user, logout } = useAuthStore();
   const {
     threads,
@@ -84,6 +104,11 @@ const ChatPage = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingMessage]);
+
+  // Auto-resize textarea when messageInput changes
+  useEffect(() => {
+    autoResizeTextarea();
+  }, [messageInput]);
 
   // Get current thread's cache data for infinite scroll
   const currentThreadCache = currentThread ? messageCache.get(currentThread.id) : null;
@@ -120,6 +145,11 @@ const ChatPage = () => {
 
     const content = messageInput;
     setMessageInput('');
+    
+    // Reset textarea height after clearing
+    setTimeout(() => {
+      autoResizeTextarea();
+    }, 0);
 
     try {
       // Get password for current thread if it exists
@@ -152,6 +182,11 @@ const ChatPage = () => {
           
           // Restore the message content to the input
           setMessageInput(content);
+          
+          // Auto-resize textarea after restoring content
+          setTimeout(() => {
+            autoResizeTextarea();
+          }, 0);
           
           // Immediately show password dialog with warning
           openPasswordDialog(
@@ -751,17 +786,30 @@ const ChatPage = () => {
 
             {/* Message Input */}
             <div className="border-t border-gray-200 p-4">
-              <form onSubmit={handleSendMessage} className="flex space-x-2">
-                <Input
-                  value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
-                  placeholder="Type your message..."
-                  disabled={isStreaming}
-                  className="flex-1"
-                />
+              <form onSubmit={handleSendMessage} className="flex items-end space-x-2">
+                <div className="flex-1 relative">
+                  <textarea
+                    ref={textareaRef}
+                    value={messageInput}
+                    onChange={(e) => {
+                      setMessageInput(e.target.value);
+                      autoResizeTextarea();
+                    }}
+                    onKeyDown={handleTextareaKeyDown}
+                    placeholder="Type your message..."
+                    disabled={isStreaming}
+                    className="w-full p-3 border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                    style={{ minHeight: '44px', maxHeight: '200px' }}
+                    rows={1}
+                  />
+                  <div className="text-xs text-gray-400 mt-1 px-1">
+                    Press Enter to send • Shift+Enter for new line
+                  </div>
+                </div>
                 <Button
                   type="submit"
                   disabled={!messageInput.trim() || isStreaming}
+                  className="h-11 px-3"
                 >
                   <Send className="w-4 h-4" />
                 </Button>
