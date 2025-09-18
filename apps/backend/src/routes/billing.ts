@@ -1,19 +1,27 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { BillingService } from '../services/billingService';
+import { UnifiedBillingService } from '../services/UnifiedBillingService';
 import { authenticateToken } from '../middleware/auth';
-import { 
-  CreateCheckoutSessionSchema,
+import {
   createSuccessResponse,
-  ValidationError 
+  ValidationError
 } from '@fluxo/shared';
 
 const router = Router();
-const billingService = new BillingService();
+const billingService = new UnifiedBillingService();
+
+// Enhanced schema for multi-gateway support
+const CreateCheckoutSessionSchema = z.object({
+  planId: z.string(),
+  gateway: z.enum(['stripe', 'mercado_pago', 'kiwify']),
+  returnUrl: z.string().url(),
+  cancelUrl: z.string().url(),
+  metadata: z.record(z.any()).optional(),
+});
 
 // Validation middleware
 const validateRequest = (schema: z.ZodSchema) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, _res: Response, next: NextFunction) => {
     try {
       schema.parse(req.body);
       next();
@@ -24,24 +32,25 @@ const validateRequest = (schema: z.ZodSchema) => {
 };
 
 // @route   POST /billing/checkout
-// @desc    Create Stripe checkout session
+// @desc    Create checkout session for any supported gateway
 // @access  Private
-router.post('/checkout', 
-  authenticateToken, 
-  validateRequest(CreateCheckoutSessionSchema), 
+router.post('/checkout',
+  authenticateToken,
+  validateRequest(CreateCheckoutSessionSchema),
   async (req, res, next) => {
     try {
-      const { priceId, successUrl, cancelUrl } = req.body;
+      const { planId, gateway, returnUrl, cancelUrl, metadata } = req.body;
       const userId = req.userId!;
 
-      const session = await billingService.createCheckoutSession(
-        userId,
-        priceId,
-        successUrl,
-        cancelUrl
-      );
+      const session = await billingService.createCheckoutSession(userId, {
+        planId,
+        gateway,
+        returnUrl,
+        cancelUrl,
+        metadata,
+      });
 
-      res.json(createSuccessResponse(session, 'Checkout session created'));
+      res.json(createSuccessResponse(session, `${gateway} checkout session created`));
     } catch (error) {
       next(error);
     }
@@ -49,7 +58,7 @@ router.post('/checkout',
 );
 
 // @route   GET /billing/portal
-// @desc    Create Stripe customer portal session
+// @desc    Create customer portal session for the user's gateway
 // @access  Private
 router.get('/portal', authenticateToken, async (req, res, next) => {
   try {
@@ -92,20 +101,77 @@ router.post('/cancel', authenticateToken, async (req, res, next) => {
   }
 });
 
-// @route   POST /billing/webhook
-// @desc    Handle Stripe webhooks
-// @access  Public (but verified via Stripe signature)
-router.post('/webhook', async (req, res, next) => {
+// @route   POST /billing/webhook/:gateway
+// @desc    Handle webhooks for all supported gateways
+// @access  Public (but verified via gateway-specific validation)
+router.post('/webhook/:gateway', async (req, res, next) => {
   try {
-    const signature = req.headers['stripe-signature'] as string;
+    const { gateway } = req.params;
     const rawBody = req.body;
+    const signature = req.headers['stripe-signature'] as string; // For Stripe
+    const headers = req.headers as Record<string, string>;
 
-    await billingService.handleWebhook(rawBody, signature);
+    if (!['stripe', 'mercado_pago', 'kiwify'].includes(gateway)) {
+      return res.status(400).json({ error: 'Unsupported gateway' });
+    }
+
+    await billingService.handleWebhook(gateway, rawBody, signature, headers);
 
     res.json({ received: true });
   } catch (error) {
     next(error);
   }
+});
+
+// Legacy webhook endpoint for Stripe (for backward compatibility)
+router.post('/webhook', async (req, res, next) => {
+  try {
+    const signature = req.headers['stripe-signature'] as string;
+    const rawBody = req.body;
+
+    await billingService.handleWebhook('stripe', rawBody, signature);
+
+    res.json({ received: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   GET /billing/gateways
+// @desc    Get available payment gateways
+// @access  Public
+router.get('/gateways', (_req, res) => {
+  const gateways = [
+    {
+      id: 'stripe',
+      name: 'Stripe',
+      description: 'Credit/Debit Cards, Apple Pay, Google Pay',
+      icon: '💳',
+      popular: true,
+      currencies: ['USD', 'EUR', 'BRL'],
+      color: 'from-blue-500 to-blue-600'
+    },
+    {
+      id: 'mercado_pago',
+      name: 'Mercado Pago',
+      description: 'PIX, Credit Cards, Bank Transfer',
+      icon: '💰',
+      popular: false,
+      currencies: ['BRL', 'ARS', 'MXN'],
+      color: 'from-yellow-500 to-yellow-600'
+    },
+    {
+      id: 'kiwify',
+      name: 'Kiwify',
+      description: 'Brazilian Payment Methods, PIX',
+      icon: '🥝',
+      popular: false,
+      currencies: ['BRL'],
+      color: 'from-green-500 to-green-600'
+    }
+  ];
+
+  res.json(createSuccessResponse(gateways, 'Payment gateways retrieved'));
 });
 
 export default router;

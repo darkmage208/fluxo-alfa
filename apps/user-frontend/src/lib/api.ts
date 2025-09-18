@@ -180,9 +180,15 @@ export const chatApi = {
   },
 };
 
-// Billing API
+// Enhanced billing API with multi-gateway support
 export const billingApi = {
-  createCheckoutSession: async (data: CreateCheckoutSessionRequest) => {
+  createCheckoutSession: async (data: {
+    planId: string;
+    gateway: 'stripe' | 'mercado_pago' | 'kiwify';
+    returnUrl: string;
+    cancelUrl: string;
+    metadata?: Record<string, any>;
+  }) => {
     const response = await api.post('/billing/checkout', data);
     return response.data.data;
   },
@@ -201,6 +207,11 @@ export const billingApi = {
 
   cancelSubscription: async () => {
     const response = await api.post('/billing/cancel');
+    return response.data.data;
+  },
+
+  getPaymentGateways: async () => {
+    const response = await api.get('/billing/gateways');
     return response.data.data;
   },
 };

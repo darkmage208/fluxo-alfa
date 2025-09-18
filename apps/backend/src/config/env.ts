@@ -22,6 +22,18 @@ const envSchema = z.object({
   STRIPE_PUBLISHABLE_KEY: z.string(),
   STRIPE_PRICE_PRO: z.string(),
   STRIPE_WEBHOOK_SECRET: z.string(),
+
+  // MercadoPago
+  MERCADOPAGO_ACCESS_TOKEN: z.string().optional(),
+  MERCADOPAGO_PUBLIC_KEY: z.string().optional(),
+  MERCADOPAGO_WEBHOOK_SECRET: z.string().optional(),
+
+  // Kiwify
+  KIWIFY_API_TOKEN: z.string().optional(),
+  KIWIFY_ACCOUNT_ID: z.string().optional(),
+  KIWIFY_WEBHOOK_TOKEN: z.string().optional(),
+  KIWIFY_PRO_PRODUCT_ID: z.string().optional(),
+  KIWIFY_CHECKOUT_BASE_URL: z.string().default('https://checkout.kiwify.com'),
   
   // OpenAI
   OPENAI_API_KEY: z.string(),

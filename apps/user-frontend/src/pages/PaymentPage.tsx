@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -10,39 +10,31 @@ import { ArrowLeft, Sparkles } from 'lucide-react';
 const PaymentPage = () => {
   const [selectedGateway, setSelectedGateway] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [gateways, setGateways] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuthStore();
 
-  const gateways = [
-    {
-      id: 'stripe',
-      name: 'Stripe',
-      description: 'Credit/Debit Cards, Apple Pay, Google Pay',
-      icon: '💳',
-      popular: true,
-      currencies: ['USD', 'EUR', 'BRL'],
-      color: 'from-blue-500 to-blue-600'
-    },
-    {
-      id: 'mercado_pago',
-      name: 'Mercado Pago',
-      description: 'PIX, Credit Cards, Bank Transfer',
-      icon: '💰',
-      popular: false,
-      currencies: ['BRL', 'ARS', 'MXN'],
-      color: 'from-yellow-500 to-yellow-600'
-    },
-    {
-      id: 'kiwify',
-      name: 'Kiwify',
-      description: 'Brazilian Payment Methods, PIX',
-      icon: '🥝',
-      popular: false,
-      currencies: ['BRL'],
-      color: 'from-green-500 to-green-600'
-    }
-  ];
+  useEffect(() => {
+    const loadGateways = async () => {
+      try {
+        const gatewayData = await billingApi.getPaymentGateways();
+        setGateways(gatewayData);
+      } catch (error) {
+        console.error('Failed to load payment gateways:', error);
+        toast({
+          title: "Error loading payment methods",
+          description: "Please refresh the page to try again",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadGateways();
+  }, [toast]);
 
 
   const handlePayment = async () => {
@@ -61,7 +53,7 @@ const PaymentPage = () => {
       // Create checkout session with selected gateway
       const checkoutData = {
         planId: 'pro',
-        gateway: selectedGateway,
+        gateway: selectedGateway as 'stripe' | 'mercado_pago' | 'kiwify',
         returnUrl: `${window.location.origin}/payment/success`,
         cancelUrl: `${window.location.origin}/payment`,
         metadata: {
@@ -71,35 +63,23 @@ const PaymentPage = () => {
         }
       };
 
-      const selectedGatewayInfo = gateways.find(g => g.id === selectedGateway);
-      
+      const selectedGatewayInfo = gateways.find((g: any) => g.id === selectedGateway);
+
       toast({
         title: "Redirecting to payment...",
         description: `Setting up your ${selectedGatewayInfo?.name} payment`,
       });
 
-      // Show development notification instead of actual payment processing
-      toast({
-        title: "Feature Under Development",
-        description: `Payment integration with ${selectedGatewayInfo?.name} is currently being developed. Please check back soon!`,
-        variant: "default",
-        duration: 8000,
-      });
-      
-      setIsProcessing(false);
-      return;
+      const response = await billingApi.createCheckoutSession(checkoutData);
 
-      // TODO: Uncomment when payment gateways are implemented
-      // const response = await billingApi.createCheckoutSession(checkoutData);
-      // 
-      // if (response.checkoutUrl) {
-      //   // Small delay to show the processing message
-      //   setTimeout(() => {
-      //     window.location.href = response.checkoutUrl;
-      //   }, 1500);
-      // } else {
-      //   throw new Error('No checkout URL received');
-      // }
+      if (response.checkoutUrl) {
+        // Small delay to show the processing message
+        setTimeout(() => {
+          window.location.href = response.checkoutUrl;
+        }, 1500);
+      } else {
+        throw new Error('No checkout URL received');
+      }
     } catch (error: any) {
       console.error('Payment initiation error:', error);
       toast({
@@ -132,27 +112,37 @@ const PaymentPage = () => {
           </div>
           <p className="text-muted-foreground">User: {user?.email}</p>
         </div>
-        <div className="grid lg:grid-cols-2 gap-12 items-start">
-          
-          {/* Left Side - Pro Plan Benefits */}
-          <ProPlanFeatures />
 
-          {/* Right Side - Payment Method Selection */}
-          <div className="space-y-8">
-            <PaymentGatewaySelector
-              gateways={gateways}
-              selectedGateway={selectedGateway}
-              onSelectGateway={setSelectedGateway}
-            />
-
-            {/* Payment Button */}
-            <PaymentButton
-              selectedGateway={selectedGateway}
-              isProcessing={isProcessing}
-              onPayment={handlePayment}
-            />
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading payment methods...</p>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="grid lg:grid-cols-2 gap-12 items-start">
+
+            {/* Left Side - Pro Plan Benefits */}
+            <ProPlanFeatures />
+
+            {/* Right Side - Payment Method Selection */}
+            <div className="space-y-8">
+              <PaymentGatewaySelector
+                gateways={gateways}
+                selectedGateway={selectedGateway}
+                onSelectGateway={setSelectedGateway}
+              />
+
+              {/* Payment Button */}
+              <PaymentButton
+                selectedGateway={selectedGateway}
+                isProcessing={isProcessing}
+                onPayment={handlePayment}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
