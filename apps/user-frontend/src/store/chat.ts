@@ -7,6 +7,7 @@ interface ThreadMessageCache {
   total: number;
   hasMore: boolean;
   lastPage: number;
+  password?: string; // Store the password for secured threads
 }
 
 interface ChatState {
@@ -84,6 +85,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           total,
           hasMore,
           lastPage: 1,
+          password, // Store the password for future pagination requests
         };
         
         set((state) => {
@@ -107,6 +109,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
               total,
               hasMore,
               lastPage: page,
+              password: existingCache.password, // Preserve the password
             };
             
             const newCache = new Map(state.messageCache);
@@ -135,14 +138,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   loadMoreMessages: async () => {
     const { currentThread, messageCache, isLoadingMoreMessages } = get();
-    
+
     if (!currentThread || isLoadingMoreMessages) return;
-    
+
     const cachedData = messageCache.get(currentThread.id);
     if (!cachedData || !cachedData.hasMore) return;
-    
+
     const nextPage = cachedData.lastPage + 1;
-    await get().loadMessages(currentThread.id, nextPage);
+    await get().loadMessages(currentThread.id, nextPage, cachedData.password);
   },
 
   setCurrentThread: async (thread: ChatThread | null, password?: string) => {

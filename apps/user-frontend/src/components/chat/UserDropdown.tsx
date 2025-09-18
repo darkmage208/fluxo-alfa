@@ -72,11 +72,12 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
                 </Link>
                 
                 {/* Theme Selection with Sub-dropdown */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowThemeMenu(!showThemeMenu)}
-                    className="flex items-center justify-between w-full px-4 py-3 text-sm hover:bg-accent/50 text-popover-foreground transition-colors"
-                  >
+                <div 
+                  className="relative group"
+                  onMouseEnter={() => setShowThemeMenu(true)}
+                  onMouseLeave={() => setShowThemeMenu(false)}
+                >
+                  <div className="flex items-center justify-between w-full px-4 py-3 text-sm hover:bg-accent/50 text-popover-foreground transition-colors cursor-pointer">
                     <div className="flex items-center">
                       <Palette className="w-4 h-4 mr-3" />
                       Theme
@@ -85,20 +86,14 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
                       <ThemeIcon className="w-4 h-4" />
                       <ChevronRight className="w-3 h-3 transition-transform duration-200" />
                     </div>
-                  </button>
+                  </div>
                   
                   {showThemeMenu && (
-                    <>
-                      <div 
-                        className="fixed inset-0 z-40" 
-                        onClick={() => setShowThemeMenu(false)}
-                      />
-                      <div className="absolute right-0 top-full mt-1 w-40 bg-popover/95 backdrop-blur-sm rounded-lg shadow-lg border border-border/50 z-[60] overflow-hidden">
+                    <div className="absolute left-full top-0 ml-1 w-40 bg-popover/95 backdrop-blur-sm rounded-lg shadow-lg border border-border/50 z-[60] overflow-hidden">
                         <div className="py-1">
                           <button
                             onClick={() => {
                               setTheme('light');
-                              setShowThemeMenu(false);
                               setShowUserDropdown(false);
                             }}
                             className={`flex items-center w-full px-3 py-2 text-sm hover:bg-accent/50 transition-colors ${
@@ -111,7 +106,6 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
                           <button
                             onClick={() => {
                               setTheme('dark');
-                              setShowThemeMenu(false);
                               setShowUserDropdown(false);
                             }}
                             className={`flex items-center w-full px-3 py-2 text-sm hover:bg-accent/50 transition-colors ${
@@ -124,7 +118,6 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
                           <button
                             onClick={() => {
                               setTheme('system');
-                              setShowThemeMenu(false);
                               setShowUserDropdown(false);
                             }}
                             className={`flex items-center w-full px-3 py-2 text-sm hover:bg-accent/50 transition-colors ${
@@ -136,7 +129,6 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
                           </button>
                         </div>
                       </div>
-                    </>
                   )}
                 </div>
                 
