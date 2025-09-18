@@ -67,7 +67,7 @@ const StreamingMarkdownRenderer: React.FC<StreamingMarkdownRendererProps> = ({
               {lang}
             </div>
           )}
-          <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto">
+          <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto thin-scrollbar">
             <code className={className} {...props}>
               {children}
             </code>

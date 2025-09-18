@@ -35,7 +35,7 @@ export const CollapsedThreadList: React.FC<CollapsedThreadListProps> = ({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-2 space-y-1">
+    <div className="flex-1 overflow-y-auto p-2 space-y-1 thin-scrollbar">
       {threads.slice(0, 10).map((thread) => (
         <div
           key={thread.id}

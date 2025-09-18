@@ -75,7 +75,7 @@ const BillingPage = () => {
   const isCanceled = subscription?.status === 'canceled';
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -85,8 +85,8 @@ const BillingPage = () => {
               Back to Chat
             </Button>
           </Link>
-          <h1 className="text-3xl font-bold">Billing & Subscription</h1>
-          <p className="text-gray-600 mt-2">Manage your Fluxo Alfa subscription</p>
+          <h1 className="text-3xl font-bold text-foreground">Billing & Subscription</h1>
+          <p className="text-muted-foreground mt-2">Manage your Fluxo Alfa subscription</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">

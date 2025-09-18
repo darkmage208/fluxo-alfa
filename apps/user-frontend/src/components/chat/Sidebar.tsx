@@ -108,7 +108,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
         <Button
-          className={`${isCollapsed ? "w-8 h-8 p-0 mx-auto" : "w-full"} bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-all duration-200`}
+          variant="outline"
+          className={`${isCollapsed ? "w-8 h-8 p-0 mx-auto" : "w-full"} border-border/50 hover:bg-accent hover:text-accent-foreground transition-all duration-200`}
           onClick={onCreateThread}
           disabled={isLoading}
           title={isCollapsed ? 'New Chat' : undefined}

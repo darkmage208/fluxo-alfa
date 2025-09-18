@@ -5,12 +5,12 @@ import { ArrowRight } from 'lucide-react';
 
 export const CTASection: React.FC = () => {
   return (
-    <section className="py-20 px-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+    <section className="py-20 px-4 bg-accent text-accent-foreground">
       <div className="container max-w-4xl mx-auto text-center">
         <h2 className="text-3xl md:text-4xl font-bold mb-6">
           Ready to Transform Your Conversations?
         </h2>
-        <p className="text-xl mb-8 opacity-90">
+        <p className="text-xl mb-8 text-accent-foreground/80">
           Join thousands of users who have already discovered the power of AI-driven communication
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -21,7 +21,7 @@ export const CTASection: React.FC = () => {
             </Button>
           </Link>
           <Link to="/login">
-            <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-8 py-6 border-white text-white hover:bg-white hover:text-blue-600">
+            <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-8 py-6">
               Sign In
             </Button>
           </Link>

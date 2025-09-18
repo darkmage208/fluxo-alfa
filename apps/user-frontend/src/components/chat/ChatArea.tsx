@@ -1,6 +1,5 @@
 import React, { useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { Message } from './Message';
 import { MessageInput } from './MessageInput';
 import StreamingMarkdownRenderer from '@/components/StreamingMarkdownRenderer';
@@ -66,10 +65,24 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     rootMargin: '50px',
   });
 
+  // Scroll to bottom when entering a new thread
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (currentThread && messagesEndRef.current) {
+      // Use setTimeout to ensure DOM is updated
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+      }, 100);
+    }
+  }, [currentThread?.id]);
+
+  // Scroll to bottom when new messages arrive or streaming
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages, streamingMessage]);
 
+  // Maintain scroll position when loading more messages
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (container && previousScrollHeight > 0 && !isLoadingMoreMessages) {
@@ -99,14 +112,13 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             </div>
             <h1 className="text-lg font-semibold text-foreground">Fluxo Alfa</h1>
           </div>
-          <ThemeToggle />
         </div>
       </div>
       
       {currentThread ? (
         <>
           {/* Messages */}
-          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6 thin-scrollbar">
             <div className="w-full max-w-4xl mx-auto space-y-6" style={{ minWidth: '320px' }}>
               {/* Load more messages trigger */}
               {hasMoreMessages && (
@@ -185,19 +197,19 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       ) : (
         <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20">
           <div className="text-center max-w-md mx-auto p-8">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-              <Bot className="w-10 h-10 text-white" />
+            <div className="w-20 h-20 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <Bot className="w-10 h-10 text-primary-foreground" />
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-3">
-              Welcome to Fluxo Alfa
+              New Chat Started
             </h2>
             <p className="text-muted-foreground mb-8 leading-relaxed">
-              Your intelligent AI assistant is ready to help. Start a conversation to unlock the power of advanced AI reasoning and knowledge.
+              Welcome to your new conversation! Your intelligent AI assistant is ready to help. Ask anything to get started.
             </p>
             <Button
-              onClick={onCreateThread} 
+              onClick={onCreateThread}
               disabled={isLoading}
-              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-8 py-3 rounded-xl"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 px-8 py-3 rounded-xl"
               size="lg"
             >
               {isLoading ? (

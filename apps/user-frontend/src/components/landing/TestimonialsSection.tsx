@@ -25,11 +25,11 @@ const testimonials = [
 
 export const TestimonialsSection: React.FC = () => {
   return (
-    <section className="py-20 px-4 bg-white">
+    <section className="py-20 px-4 bg-background">
       <div className="container max-w-6xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">What Our Users Say</h2>
-          <p className="text-xl text-gray-600">
+          <p className="text-xl text-muted-foreground">
             Join thousands of satisfied users worldwide
           </p>
         </div>
@@ -42,10 +42,10 @@ export const TestimonialsSection: React.FC = () => {
                     <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
                   ))}
                 </div>
-                <p className="text-gray-600 mb-4 italic">"{testimonial.content}"</p>
+                <p className="text-muted-foreground mb-4 italic">"{testimonial.content}"</p>
                 <div>
                   <div className="font-semibold">{testimonial.name}</div>
-                  <div className="text-sm text-gray-500">{testimonial.role}</div>
+                  <div className="text-sm text-muted-foreground">{testimonial.role}</div>
                 </div>
               </CardContent>
             </Card>

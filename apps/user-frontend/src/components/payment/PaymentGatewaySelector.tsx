@@ -26,7 +26,7 @@ export const PaymentGatewaySelector: React.FC<PaymentGatewaySelectorProps> = ({
   return (
     <Card className="border-2 shadow-xl">
       <CardHeader>
-        <CardTitle className="flex items-center text-2xl">
+        <CardTitle className="flex items-center text-2xl text-foreground">
           <CreditCard className="w-6 h-6 mr-3" />
           Choose Payment Method
         </CardTitle>
@@ -40,13 +40,13 @@ export const PaymentGatewaySelector: React.FC<PaymentGatewaySelectorProps> = ({
             key={gateway.id}
             className={`relative p-6 rounded-xl border-2 cursor-pointer transition-all hover:shadow-lg ${
               selectedGateway === gateway.id
-                ? 'border-blue-500 bg-blue-50 shadow-lg ring-2 ring-blue-200'
-                : 'border-gray-200 hover:border-gray-300 bg-white'
+                ? 'border-primary bg-accent shadow-lg ring-2 ring-primary/20'
+                : 'border-border hover:border-primary/50 bg-card'
             }`}
             onClick={() => onSelectGateway(gateway.id)}
           >
             {gateway.popular && (
-              <div className="absolute -top-3 left-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm px-4 py-1 rounded-full font-medium">
+              <div className="absolute -top-3 left-6 bg-primary text-primary-foreground text-sm px-4 py-1 rounded-full font-medium">
                 Most Popular
               </div>
             )}
@@ -54,11 +54,11 @@ export const PaymentGatewaySelector: React.FC<PaymentGatewaySelectorProps> = ({
               <div className="flex items-center space-x-4">
                 <div className="text-3xl">{gateway.icon}</div>
                 <div>
-                  <div className="font-bold text-xl">{gateway.name}</div>
+                  <div className="font-bold text-xl text-foreground">{gateway.name}</div>
                   <div className="text-sm text-muted-foreground mb-2">{gateway.description}</div>
                   <div className="flex items-center space-x-2">
                     {gateway.currencies.map((currency) => (
-                      <span key={currency} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+                      <span key={currency} className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">
                         {currency}
                       </span>
                     ))}
@@ -67,8 +67,8 @@ export const PaymentGatewaySelector: React.FC<PaymentGatewaySelectorProps> = ({
               </div>
               <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
                 selectedGateway === gateway.id
-                  ? 'bg-blue-600 border-blue-600'
-                  : 'border-gray-300'
+                  ? 'bg-primary border-primary'
+                  : 'border-muted-foreground'
               }`}>
                 {selectedGateway === gateway.id && (
                   <CheckCircle className="w-4 h-4 text-white" />

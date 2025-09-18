@@ -46,7 +46,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
   setDeleteConfirmId,
 }) => {
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto overflow-x-hidden thin-scrollbar">
       {isLoading ? (
         <div className="p-6 text-center text-muted-foreground">
           <div className="flex items-center justify-center space-x-3">

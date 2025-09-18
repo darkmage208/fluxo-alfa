@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/store/auth';
+import { Sparkles } from 'lucide-react';
 
 const RegisterPage = () => {
   const [email, setEmail] = useState('');
@@ -63,11 +64,17 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
+      {/* Logo */}
+      <Link to="/" className="flex items-center space-x-2 mb-8 hover:opacity-80 transition-opacity">
+        <Sparkles className="w-8 h-8 text-primary" />
+        <span className="text-2xl font-bold text-foreground">Fluxo Alfa</span>
+      </Link>
+
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Create your account</CardTitle>
-          <CardDescription>Start your journey with Fluxo Alfa</CardDescription>
+          <CardTitle className="text-2xl font-bold text-foreground">Create your account</CardTitle>
+          <CardDescription className="text-muted-foreground">Start your journey with Fluxo Alfa</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -113,10 +120,10 @@ const RegisterPage = () => {
           <div className="mt-4">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
+                <div className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                <span className="px-2 bg-card text-muted-foreground">Or continue with</span>
               </div>
             </div>
             
@@ -138,9 +145,9 @@ const RegisterPage = () => {
           </div>
         </CardContent>
         <CardFooter className="justify-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link to="/login" className="text-blue-600 hover:underline">
+            <Link to="/login" className="text-foreground hover:underline">
               Sign in
             </Link>
           </p>

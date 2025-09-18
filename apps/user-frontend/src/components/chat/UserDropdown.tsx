@@ -1,17 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useTheme } from '@/contexts/ThemeContext';
-import { 
+import {
   User,
   CreditCard,
   LogOut,
-  ChevronDown,
-  ChevronRight,
-  Sun,
-  Moon,
-  Monitor,
-  Palette
+  ChevronDown
 } from 'lucide-react';
 
 interface UserDropdownProps {
@@ -27,16 +21,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
   setShowUserDropdown,
   onLogout,
 }) => {
-  const { theme, setTheme, actualTheme } = useTheme();
-  const [showThemeMenu, setShowThemeMenu] = useState(false);
 
-  const getThemeIcon = () => {
-    if (theme === 'light') return Sun;
-    if (theme === 'dark') return Moon;
-    return Monitor;
-  };
-
-  const ThemeIcon = getThemeIcon();
   return (
     <div className="p-4 border-t border-border/50">
       <div className="relative">
@@ -70,67 +55,6 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
                   <CreditCard className="w-4 h-4 mr-3" />
                   Billing & Subscription
                 </Link>
-                
-                {/* Theme Selection with Sub-dropdown */}
-                <div 
-                  className="relative group"
-                  onMouseEnter={() => setShowThemeMenu(true)}
-                  onMouseLeave={() => setShowThemeMenu(false)}
-                >
-                  <div className="flex items-center justify-between w-full px-4 py-3 text-sm hover:bg-accent/50 text-popover-foreground transition-colors cursor-pointer">
-                    <div className="flex items-center">
-                      <Palette className="w-4 h-4 mr-3" />
-                      Theme
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <ThemeIcon className="w-4 h-4" />
-                      <ChevronRight className="w-3 h-3 transition-transform duration-200" />
-                    </div>
-                  </div>
-                  
-                  {showThemeMenu && (
-                    <div className="absolute left-full top-0 ml-1 w-40 bg-popover/95 backdrop-blur-sm rounded-lg shadow-lg border border-border/50 z-[60] overflow-hidden">
-                        <div className="py-1">
-                          <button
-                            onClick={() => {
-                              setTheme('light');
-                              setShowUserDropdown(false);
-                            }}
-                            className={`flex items-center w-full px-3 py-2 text-sm hover:bg-accent/50 transition-colors ${
-                              theme === 'light' ? 'bg-accent/50 text-accent-foreground' : 'text-popover-foreground'
-                            }`}
-                          >
-                            <Sun className="w-4 h-4 mr-3" />
-                            Light
-                          </button>
-                          <button
-                            onClick={() => {
-                              setTheme('dark');
-                              setShowUserDropdown(false);
-                            }}
-                            className={`flex items-center w-full px-3 py-2 text-sm hover:bg-accent/50 transition-colors ${
-                              theme === 'dark' ? 'bg-accent/50 text-accent-foreground' : 'text-popover-foreground'
-                            }`}
-                          >
-                            <Moon className="w-4 h-4 mr-3" />
-                            Dark
-                          </button>
-                          <button
-                            onClick={() => {
-                              setTheme('system');
-                              setShowUserDropdown(false);
-                            }}
-                            className={`flex items-center w-full px-3 py-2 text-sm hover:bg-accent/50 transition-colors ${
-                              theme === 'system' ? 'bg-accent/50 text-accent-foreground' : 'text-popover-foreground'
-                            }`}
-                          >
-                            <Monitor className="w-4 h-4 mr-3" />
-                            System
-                          </button>
-                        </div>
-                      </div>
-                  )}
-                </div>
                 
                 <div className="h-px bg-border/50 mx-2 my-1"></div>
                 <button

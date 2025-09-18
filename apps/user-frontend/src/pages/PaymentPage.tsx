@@ -112,29 +112,26 @@ const PaymentPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Header */}
-      <header className="border-b bg-white/95 backdrop-blur">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link to="/chat">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Chat
-              </Button>
-            </Link>
-            <div className="flex items-center space-x-2">
-              <Sparkles className="w-5 h-5 text-blue-600" />
-              <div className="text-lg font-semibold">Upgrade to Pro</div>
-            </div>
-          </div>
-          <div className="text-sm text-muted-foreground">
-            {user?.email}
-          </div>
+    <div className="min-h-screen bg-background">
+      <div className="container max-w-6xl mx-auto py-8 px-4">
+        {/* Back button */}
+        <div className="mb-8">
+          <Link to="/chat">
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Chat
+            </Button>
+          </Link>
         </div>
-      </header>
 
-      <div className="container max-w-6xl mx-auto py-12 px-4">
+        {/* Page title */}
+        <div className="text-center mb-12">
+          <div className="flex items-center justify-center space-x-2 mb-4">
+            <Sparkles className="w-8 h-8 text-primary" />
+            <h1 className="text-3xl font-bold text-foreground">Upgrade to Pro</h1>
+          </div>
+          <p className="text-muted-foreground">User: {user?.email}</p>
+        </div>
         <div className="grid lg:grid-cols-2 gap-12 items-start">
           
           {/* Left Side - Pro Plan Benefits */}
