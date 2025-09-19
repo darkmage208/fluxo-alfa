@@ -40,7 +40,7 @@ echo "🗑️  Removing existing certificates to force renewal..."
 docker run --rm -v fluxo-certbot-data-prod:/etc/letsencrypt alpine:latest \
     sh -c "rm -rf /etc/letsencrypt/live/$DOMAIN /etc/letsencrypt/archive/$DOMAIN /etc/letsencrypt/renewal/$DOMAIN.conf" 2>/dev/null || true
 
-# Get SSL certificate (forced renewal)
+# Get SSL certificate
 echo "🔐 Obtaining fresh SSL certificate from Let's Encrypt..."
 docker compose -f docker-compose.prod.yml run --rm certbot \
     certonly \
@@ -50,7 +50,7 @@ docker compose -f docker-compose.prod.yml run --rm certbot \
     --agree-tos \
     --no-eff-email \
     --non-interactive \
-    --force-renewal \
+    --expand \
     -d $DOMAIN \
     -d www.$DOMAIN \
     -d api.$DOMAIN \
