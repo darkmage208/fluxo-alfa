@@ -2,23 +2,47 @@
 
 This guide explains how to configure all three payment gateways (Stripe, MercadoPago, and Kiwify) for the Fluxo Alfa platform.
 
+## Quick Start
+
+1. Copy the environment template:
+   ```bash
+   cd apps/backend
+   cp .env.example .env
+   ```
+
+2. Fill in your payment gateway credentials in the `.env` file
+
+3. Generate Prisma client:
+   ```bash
+   npx prisma generate
+   ```
+
+4. Run database migrations:
+   ```bash
+   npx prisma db push
+   ```
+
 ## Required Environment Variables
 
-### Backend (.env)
+All required environment variables are documented in `apps/backend/.env.example`. The key payment gateway configurations are:
 
+### Stripe (Primary Gateway)
 ```bash
-# Stripe Configuration
 STRIPE_SECRET_KEY=sk_test_... # Your Stripe secret key
 STRIPE_PUBLISHABLE_KEY=pk_test_... # Your Stripe publishable key
 STRIPE_PRICE_PRO=price_... # Stripe price ID for Pro plan
 STRIPE_WEBHOOK_SECRET=whsec_... # Stripe webhook signing secret
+```
 
-# MercadoPago Configuration (Optional)
+### MercadoPago (Latin America)
+```bash
 MERCADOPAGO_ACCESS_TOKEN=TEST-... # MercadoPago access token
 MERCADOPAGO_PUBLIC_KEY=TEST-... # MercadoPago public key
-MERCADOPAGO_WEBHOOK_SECRET=your_webhook_secret # Optional webhook secret
+MERCADOPAGO_WEBHOOK_SECRET=your_webhook_secret # Webhook secret
+```
 
-# Kiwify Configuration (Optional)
+### Kiwify (Brazil)
+```bash
 KIWIFY_API_TOKEN=your_api_token # Kiwify API token
 KIWIFY_ACCOUNT_ID=your_account_id # Kiwify account ID
 KIWIFY_WEBHOOK_TOKEN=your_webhook_token # Webhook validation token
