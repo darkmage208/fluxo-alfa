@@ -1,92 +1,155 @@
 version: '3.8'
 
 services:
+  # Database Services
   postgres:
     image: pgvector/pgvector:pg16
     container_name: fluxo-postgres-prod
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-fluxoalfa}
-      POSTGRES_USER: ${POSTGRES_USER:-user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      POSTGRES_DB: ${POSTGRES_DB:-fluxoalfa_prod}
+      POSTGRES_USER: ${POSTGRES_USER:-fluxo_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql
     networks:
-      - fluxo-network
+      - fluxo-internal
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fluxo_user} -d ${POSTGRES_DB:-fluxoalfa_prod}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
     container_name: fluxo-redis-prod
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
     networks:
-      - fluxo-network
+      - fluxo-internal
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
+  # Application Services
   backend:
     build:
       context: .
       dockerfile: ./apps/backend/Dockerfile
+      args:
+        NODE_ENV: production
     container_name: fluxo-backend-prod
-    ports:
-      - "${BACKEND_PORT:-8000}:8000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgres://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-fluxoalfa}
-      - REDIS_URL=redis://redis:6379
+      - PORT=8000
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-fluxo_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-fluxoalfa_prod}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - BACKEND_URL=https://api.fluxoalfa.com.br
+      - USER_FRONTEND_URL=https://fluxoalfa.com.br
+      - ADMIN_FRONTEND_URL=https://admin.fluxoalfa.com.br
+      - ALLOWED_ORIGINS=https://fluxoalfa.com.br,https://admin.fluxoalfa.com.br,https://www.fluxoalfa.com.br
     env_file:
-      - .env
+      - .env.production
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
-      - fluxo-network
+      - fluxo-internal
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
 
   user-frontend:
     build:
       context: .
       dockerfile: ./apps/user-frontend/Dockerfile
+      args:
+        VITE_API_URL: https://api.fluxoalfa.com.br
+        NODE_ENV: production
     container_name: fluxo-user-frontend-prod
-    ports:
-      - "${USER_FRONTEND_PORT:-3000}:3000"
-    environment:
-      - VITE_API_URL=${BACKEND_URL:-http://localhost:8000}
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
-      - fluxo-network
+      - fluxo-internal
     restart: unless-stopped
 
   admin-frontend:
     build:
       context: .
       dockerfile: ./apps/admin-frontend/Dockerfile
+      args:
+        VITE_API_URL: https://api.fluxoalfa.com.br
+        NODE_ENV: production
     container_name: fluxo-admin-frontend-prod
-    ports:
-      - "${ADMIN_FRONTEND_PORT:-3001}:3001"
-    environment:
-      - VITE_API_URL=${BACKEND_URL:-http://localhost:8000}
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
-      - fluxo-network
+      - fluxo-internal
     restart: unless-stopped
 
+  # Reverse Proxy & SSL
+  nginx:
+    image: nginx:alpine
+    container_name: fluxo-nginx-prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot_data:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      backend:
+        condition: service_healthy
+      user-frontend:
+        condition: service_started
+      admin-frontend:
+        condition: service_started
+    networks:
+      - fluxo-internal
+    restart: unless-stopped
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+
+  # SSL Certificate Management
+  certbot:
+    image: certbot/certbot
+    container_name: fluxo-certbot-prod
+    volumes:
+      - certbot_data:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    networks:
+      - fluxo-internal
+    restart: "no"
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
 networks:
-  fluxo-network:
+  fluxo-internal:
     driver: bridge
+    name: fluxo-network-prod
 
 volumes:
   postgres_data:
+    name: fluxo-postgres-data-prod
   redis_data:
+    name: fluxo-redis-data-prod
+  certbot_data:
+    name: fluxo-certbot-data-prod
+  certbot_www:
+    name: fluxo-certbot-www-prod
+  nginx_logs:
+    name: fluxo-nginx-logs-prod
