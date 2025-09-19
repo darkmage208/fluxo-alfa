@@ -54,6 +54,9 @@ COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 # Copy Prisma schema
 COPY --from=builder /app/apps/backend/prisma ./apps/backend/prisma
 
+# Copy source scripts for seeding and migrations
+COPY --from=builder /app/apps/backend/src ./apps/backend/src
+
 WORKDIR /app/apps/backend
 
 EXPOSE 8000
