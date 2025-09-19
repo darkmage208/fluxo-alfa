@@ -51,18 +51,49 @@ docker compose -f docker-compose.prod.yml stop nginx
 
 # Get SSL certificate using standalone mode
 echo "🔐 Requesting certificate using standalone mode..."
-docker compose -f docker-compose.prod.yml run --rm -p 80:80 certbot \
+
+# First try with just the main domain to debug
+echo "📋 Testing with main domain first..."
+docker run --rm \
+    -v fluxo-certbot-data-prod:/etc/letsencrypt \
+    -p 80:80 \
+    certbot/certbot \
     certonly \
     --standalone \
     --email $EMAIL \
     --agree-tos \
     --no-eff-email \
     --non-interactive \
-    --force-renewal \
-    -d $DOMAIN \
-    -d www.$DOMAIN \
-    -d api.$DOMAIN \
-    -d admin.$DOMAIN
+    --verbose \
+    --test-cert \
+    -d $DOMAIN
+
+if [ $? -eq 0 ]; then
+    echo "✅ Test certificate successful! Getting real certificate..."
+    # Remove test certificate
+    docker run --rm -v fluxo-certbot-data-prod:/etc/letsencrypt alpine:latest \
+        sh -c "rm -rf /etc/letsencrypt/live/$DOMAIN /etc/letsencrypt/archive/$DOMAIN /etc/letsencrypt/renewal/$DOMAIN.conf" 2>/dev/null || true
+
+    # Get real certificate for all domains
+    docker run --rm \
+        -v fluxo-certbot-data-prod:/etc/letsencrypt \
+        -p 80:80 \
+        certbot/certbot \
+        certonly \
+        --standalone \
+        --email $EMAIL \
+        --agree-tos \
+        --no-eff-email \
+        --non-interactive \
+        --verbose \
+        -d $DOMAIN \
+        -d www.$DOMAIN \
+        -d api.$DOMAIN \
+        -d admin.$DOMAIN
+else
+    echo "❌ Test certificate failed. Check DNS and firewall settings."
+    exit 1
+fi
 
 CERT_RESULT=$?
 
