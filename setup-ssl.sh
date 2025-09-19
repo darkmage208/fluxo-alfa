@@ -59,6 +59,15 @@ docker compose -f docker-compose.prod.yml run --rm certbot \
 if [ $? -eq 0 ]; then
     echo "✅ SSL certificate obtained successfully!"
 
+    # Switch to HTTPS-enabled nginx configuration
+    echo "🔄 Switching to HTTPS-enabled nginx configuration..."
+    if [ -f "./docker/nginx/conf.d/fluxoalfa-ssl.conf.bak" ]; then
+        cp "./docker/nginx/conf.d/fluxoalfa-ssl.conf.bak" "./docker/nginx/conf.d/fluxoalfa.conf"
+    else
+        # Fallback to default HTTPS config if backup doesn't exist
+        echo "⚠️  Backup HTTPS config not found, using default"
+    fi
+
     # Restart nginx to load SSL certificates
     echo "🔄 Restarting nginx with SSL certificates..."
     docker compose -f docker-compose.prod.yml restart nginx

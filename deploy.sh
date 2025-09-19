@@ -33,6 +33,13 @@ echo "✅ Environment variables check passed"
 echo "🛑 Stopping existing containers..."
 docker compose -f docker-compose.prod.yml down 2>/dev/null || true
 
+# Set up HTTP-only nginx config for initial deployment
+echo "🔧 Setting up HTTP-only nginx configuration..."
+if [ -f "./docker/nginx/conf.d/fluxoalfa.conf" ]; then
+    cp "./docker/nginx/conf.d/fluxoalfa.conf" "./docker/nginx/conf.d/fluxoalfa-ssl.conf.bak"
+fi
+cp "./docker/nginx/conf.d/fluxoalfa-http.conf" "./docker/nginx/conf.d/fluxoalfa.conf"
+
 # Start production environment
 echo "🏗️ Building and starting production environment..."
 docker compose -f docker-compose.prod.yml up -d --build
