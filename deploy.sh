@@ -36,8 +36,14 @@ docker compose -f docker-compose.prod.yml down 2>/dev/null || true
 # Set up HTTP-only nginx config for initial deployment
 echo "🔧 Setting up HTTP-only nginx configuration..."
 if [ -f "./docker/nginx/conf.d/fluxoalfa.conf" ]; then
-    cp "./docker/nginx/conf.d/fluxoalfa.conf" "./docker/nginx/conf.d/fluxoalfa-ssl.conf.bak"
+    # Check if current config has SSL (contains "listen 443")
+    if grep -q "listen 443" "./docker/nginx/conf.d/fluxoalfa.conf"; then
+        cp "./docker/nginx/conf.d/fluxoalfa.conf" "./docker/nginx/conf.d/fluxoalfa-ssl.conf.bak"
+        echo "📦 Backed up HTTPS config to fluxoalfa-ssl.conf.bak"
+    fi
 fi
+# Remove any duplicate config files and use HTTP-only config
+rm -f "./docker/nginx/conf.d/fluxoalfa.conf"
 cp "./docker/nginx/conf.d/fluxoalfa-http.conf" "./docker/nginx/conf.d/fluxoalfa.conf"
 
 # Start production environment
