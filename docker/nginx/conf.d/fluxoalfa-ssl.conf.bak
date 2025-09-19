@@ -112,8 +112,19 @@ server {
     # HSTS
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 
-    # CORS headers for API
-    add_header Access-Control-Allow-Origin "https://fluxoalfa.com.br, https://admin.fluxoalfa.com.br" always;
+    # Dynamic CORS headers for API
+    set $cors_origin "";
+    if ($http_origin = "https://fluxoalfa.com.br") {
+        set $cors_origin "https://fluxoalfa.com.br";
+    }
+    if ($http_origin = "https://admin.fluxoalfa.com.br") {
+        set $cors_origin "https://admin.fluxoalfa.com.br";
+    }
+    if ($http_origin = "https://www.fluxoalfa.com.br") {
+        set $cors_origin "https://www.fluxoalfa.com.br";
+    }
+
+    add_header Access-Control-Allow-Origin $cors_origin always;
     add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
     add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization" always;
     add_header Access-Control-Expose-Headers "Content-Length,Content-Range" always;
@@ -122,7 +133,7 @@ server {
     # Handle preflight requests
     location / {
         if ($request_method = 'OPTIONS') {
-            add_header Access-Control-Allow-Origin "https://fluxoalfa.com.br, https://admin.fluxoalfa.com.br" always;
+            add_header Access-Control-Allow-Origin $cors_origin always;
             add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
             add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization" always;
             add_header Access-Control-Max-Age 1728000;
