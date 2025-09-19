@@ -6,6 +6,7 @@ AI-powered chat platform backend with multi-gateway payment processing.
 
 1. **Environment Setup**
    ```bash
+   cd ../..  # Go to project root
    cp .env.example .env
    # Fill in your environment variables
    ```
@@ -59,7 +60,7 @@ src/
 
 ## Environment Variables
 
-See `.env.example` for all required environment variables. Key categories:
+See `../../.env.example` for all required environment variables. Key categories:
 
 - **Database**: PostgreSQL and Redis URLs
 - **Authentication**: JWT secrets and Google OAuth

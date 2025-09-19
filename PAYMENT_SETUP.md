@@ -6,7 +6,6 @@ This guide explains how to configure all three payment gateways (Stripe, Mercado
 
 1. Copy the environment template:
    ```bash
-   cd apps/backend
    cp .env.example .env
    ```
 
@@ -14,6 +13,7 @@ This guide explains how to configure all three payment gateways (Stripe, Mercado
 
 3. Generate Prisma client:
    ```bash
+   cd apps/backend
    npx prisma generate
    ```
 
@@ -24,7 +24,7 @@ This guide explains how to configure all three payment gateways (Stripe, Mercado
 
 ## Required Environment Variables
 
-All required environment variables are documented in `apps/backend/.env.example`. The key payment gateway configurations are:
+All required environment variables are documented in `.env.example`. The key payment gateway configurations are:
 
 ### Stripe (Primary Gateway)
 ```bash
