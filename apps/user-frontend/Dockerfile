@@ -1,5 +1,13 @@
 FROM node:18-alpine as builder
 
+# Accept build arguments
+ARG VITE_API_URL
+ARG NODE_ENV=production
+
+# Set environment variables for Vite build
+ENV VITE_API_URL=$VITE_API_URL
+ENV NODE_ENV=$NODE_ENV
+
 WORKDIR /app
 
 # Copy root package.json and install dependencies
@@ -17,9 +25,9 @@ COPY apps/user-frontend ./apps/user-frontend
 WORKDIR /app/packages/shared
 RUN npm run build
 
-# Build frontend
+# Build frontend with environment variables
 WORKDIR /app/apps/user-frontend
-RUN npm run build
+RUN echo "Building with VITE_API_URL=$VITE_API_URL" && npm run build
 
 # Production stage
 FROM nginx:alpine
