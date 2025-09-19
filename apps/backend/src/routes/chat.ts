@@ -159,8 +159,9 @@ router.post('/message',
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
+      // CORS headers handled by nginx
+      // res.setHeader('Access-Control-Allow-Origin', '*');
+      // res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
 
       // Send initial connection confirmation
       res.write('data: {"type":"connected"}\n\n');
