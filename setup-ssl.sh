@@ -5,7 +5,8 @@ set -e
 DOMAIN="fluxoalfa.com.br"
 EMAIL="admin@fluxoalfa.com.br"
 
-echo "🔒 Setting up SSL certificates for $DOMAIN"
+echo "🔒 Setting up SSL certificates for $DOMAIN (force renewal)"
+echo "⚠️  This will replace any existing certificates"
 
 # Check if production environment is running
 if ! docker compose -f docker-compose.prod.yml ps | grep -q "Up"; then
@@ -34,8 +35,13 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     exit 1
 fi
 
-# Get SSL certificate
-echo "🔐 Obtaining SSL certificate from Let's Encrypt..."
+# Remove existing certificates to force renewal
+echo "🗑️  Removing existing certificates to force renewal..."
+docker run --rm -v fluxo-certbot-data-prod:/etc/letsencrypt alpine:latest \
+    sh -c "rm -rf /etc/letsencrypt/live/$DOMAIN /etc/letsencrypt/archive/$DOMAIN /etc/letsencrypt/renewal/$DOMAIN.conf" 2>/dev/null || true
+
+# Get SSL certificate (forced renewal)
+echo "🔐 Obtaining fresh SSL certificate from Let's Encrypt..."
 docker compose -f docker-compose.prod.yml run --rm certbot \
     certonly \
     --webroot \
@@ -44,6 +50,7 @@ docker compose -f docker-compose.prod.yml run --rm certbot \
     --agree-tos \
     --no-eff-email \
     --non-interactive \
+    --force-renewal \
     -d $DOMAIN \
     -d www.$DOMAIN \
     -d api.$DOMAIN \
@@ -69,13 +76,14 @@ if [ $? -eq 0 ]; then
     fi
 
     echo ""
-    echo "🎉 SSL setup complete!"
+    echo "🎉 SSL setup complete! Fresh certificates installed."
     echo "🌐 Main site: https://$DOMAIN"
     echo "🌐 API endpoint: https://api.$DOMAIN"
     echo "🌐 Admin panel: https://admin.$DOMAIN"
     echo "🔒 HTTP traffic is automatically redirected to HTTPS"
     echo ""
-    echo "📋 Certificate renewal is automatic via the certbot container"
+    echo "📋 Next automatic renewal: 90 days from now"
+    echo "💡 Run this script anytime to force immediate renewal"
 else
     echo "❌ Failed to obtain SSL certificate"
     echo "🔍 Check the logs above for details"

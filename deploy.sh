@@ -62,10 +62,12 @@ else
     exit 1
 fi
 
-# Check if SSL certificates exist
+# Check SSL certificate status and setup
+echo "🔍 Checking SSL certificate status..."
 if docker volume inspect fluxo-certbot-data-prod >/dev/null 2>&1 && \
    docker run --rm -v fluxo-certbot-data-prod:/etc/letsencrypt alpine:latest test -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" 2>/dev/null; then
-    echo "✅ SSL certificates found"
+    echo "📜 Existing SSL certificates found"
+    echo "🔄 SSL certificates will be renewed/updated on next setup-ssl.sh run"
     echo "🌐 Your site is running at: https://$DOMAIN"
     echo "🌐 API endpoint: https://api.$DOMAIN"
     echo "🌐 Admin panel: https://admin.$DOMAIN"
@@ -74,10 +76,11 @@ else
     echo "🌐 Your site is running at: http://$DOMAIN"
     echo "🌐 API endpoint: http://api.$DOMAIN"
     echo "🌐 Admin panel: http://admin.$DOMAIN"
-    echo ""
-    echo "📝 To set up SSL certificates, run:"
-    echo "   ./setup-ssl.sh"
 fi
+
+echo ""
+echo "📝 To set up or renew SSL certificates, run:"
+echo "   ./setup-ssl.sh"
 
 echo ""
 echo "🎉 Production deployment complete!"
