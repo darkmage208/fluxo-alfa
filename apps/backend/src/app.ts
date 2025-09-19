@@ -21,11 +21,11 @@ const app = express();
 // Security middleware
 app.use(helmet());
 
-// CORS configuration
-app.use(cors({
-  origin: env.ALLOWED_ORIGINS,
-  credentials: true,
-}));
+// CORS configuration - handled by nginx in production
+// app.use(cors({
+//   origin: env.ALLOWED_ORIGINS,
+//   credentials: true,
+// }));
 
 // Rate limiting
 const generalLimiter = rateLimit({
