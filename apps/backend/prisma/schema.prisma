@@ -353,3 +353,60 @@ model PasswordReset {
 
   @@map("password_resets")
 }
+
+// Model pricing configuration for dynamic cost calculation
+model ModelPricing {
+  id          String   @id @default(uuid()) @db.Uuid
+  provider    String   // openai, anthropic, etc.
+  modelName   String   @map("model_name")
+  modelType   String   @map("model_type") // inference, embedding
+  isActive    Boolean  @default(true) @map("is_active")
+
+  // Pricing per 1k tokens
+  inputPer1k  Decimal? @map("input_per_1k") @db.Decimal(10, 8)   // For inference models
+  outputPer1k Decimal? @map("output_per_1k") @db.Decimal(10, 8)  // For inference models
+  per1k       Decimal? @map("per_1k") @db.Decimal(10, 8)         // For embedding models
+
+  // Metadata
+  currency    String   @default("USD")
+  description String?
+  validFrom   DateTime @default(now()) @map("valid_from")
+  validUntil  DateTime? @map("valid_until")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([provider, modelName, validFrom])
+  @@index([provider, modelName, isActive])
+  @@index([modelType, isActive])
+  @@index([validFrom, validUntil])
+  @@map("model_pricing")
+}
+
+// Background task queue for async processing
+model TaskQueue {
+  id          String   @id @default(uuid()) @db.Uuid
+  taskType    String   @map("task_type") // summary_generation, analytics_update, etc.
+  status      String   @default("pending") // pending, processing, completed, failed
+  priority    Int      @default(1) // 1 = low, 5 = high
+
+  // Task data
+  payload     Json     @db.Json
+  result      Json?    @db.Json
+  errorMessage String? @map("error_message")
+
+  // Scheduling
+  scheduledAt DateTime @default(now()) @map("scheduled_at")
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  retryCount  Int      @default(0) @map("retry_count")
+  maxRetries  Int      @default(3) @map("max_retries")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([status, priority, scheduledAt])
+  @@index([taskType, status])
+  @@index([scheduledAt])
+  @@map("task_queue")
+}

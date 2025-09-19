@@ -77,6 +77,7 @@ const PaymentPage = () => {
         setTimeout(() => {
           window.location.href = response.checkoutUrl;
         }, 1500);
+        setIsProcessing(false);
       } else {
         throw new Error('No checkout URL received');
       }

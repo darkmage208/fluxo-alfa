@@ -18,7 +18,7 @@ export class RAGService {
     try {
       // Calculate embedding tokens and cost for this query
       const embeddingTokens = calculateTokens(query);
-      const embeddingCost = this.openaiService.calculateEmbeddingCost(embeddingTokens);
+      const embeddingCost = await this.openaiService.calculateEmbeddingCost(embeddingTokens);
 
       // Generate embedding for the query
       const queryEmbedding = await this.openaiService.generateEmbedding(query);
@@ -49,7 +49,7 @@ export class RAGService {
       logger.error('RAG search error:', error);
       // Return empty context on error, don't fail the chat
       const embeddingTokens = calculateTokens(query);
-      const embeddingCost = this.openaiService.calculateEmbeddingCost(embeddingTokens);
+      const embeddingCost = await this.openaiService.calculateEmbeddingCost(embeddingTokens);
       return {
         context: '',
         embeddingTokens,

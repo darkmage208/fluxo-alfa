@@ -2,28 +2,18 @@ import OpenAI from 'openai';
 import { env } from '../config/env';
 import logger from '../config/logger';
 import { calculateTokens } from '@fluxo/shared';
+import { ModelPricingService } from './modelPricingService';
 
 export class OpenAIService {
   private openai: OpenAI;
-  private pricing: any;
+  private pricingService: ModelPricingService;
 
   constructor() {
     this.openai = new OpenAI({
       apiKey: env.OPENAI_API_KEY,
     });
-    
-    // Use accurate OpenAI pricing as of 2024
-    this.pricing = {
-      inference_model: {
-        // GPT-4o pricing (per 1k tokens)
-        input_per_1k: 0.0025,   // $2.50 per 1M input tokens
-        output_per_1k: 0.01     // $10.00 per 1M output tokens
-      },
-      embedding_model: {
-        // text-embedding-3-small pricing (per 1k tokens)
-        per_1k: 0.00002        // $0.02 per 1M tokens
-      }
-    };
+
+    this.pricingService = new ModelPricingService();
   }
 
   async generateEmbedding(text: string): Promise<number[]> {
@@ -143,17 +133,20 @@ export class OpenAIService {
         }
       }
 
-      // Calculate costs with accurate pricing
-      const inputCost = (tokensInput / 1000) * this.pricing.inference_model.input_per_1k;
-      const outputCost = (tokensOutput / 1000) * this.pricing.inference_model.output_per_1k;
-      const totalCost = inputCost + outputCost;
+      // Calculate costs with dynamic pricing
+      const costCalculation = await this.pricingService.calculateInferenceCost(
+        'openai',
+        env.INFERENCE_MODEL,
+        tokensInput,
+        tokensOutput
+      );
 
       yield {
         content: '',
         fullResponse,
         tokensInput,
         tokensOutput,
-        cost: totalCost,
+        cost: costCalculation.totalCost,
         finished: true
       };
 
@@ -163,8 +156,12 @@ export class OpenAIService {
     }
   }
 
-  calculateEmbeddingCost(tokenCount: number): number {
-    return (tokenCount / 1000) * this.pricing.embedding_model.per_1k;
+  async calculateEmbeddingCost(tokenCount: number): Promise<number> {
+    return await this.pricingService.calculateEmbeddingCost(
+      'openai',
+      env.EMBEDDING_MODEL,
+      tokenCount
+    );
   }
 
   async generateSummary(messages: Array<{ role: string; content: string }>): Promise<{
@@ -189,15 +186,18 @@ export class OpenAIService {
       const tokensOutput = response.usage?.completion_tokens || 0;
 
       // Calculate cost for summary generation
-      const inputCost = (tokensInput / 1000) * this.pricing.inference_model.input_per_1k;
-      const outputCost = (tokensOutput / 1000) * this.pricing.inference_model.output_per_1k;
-      const totalCost = inputCost + outputCost;
+      const costCalculation = await this.pricingService.calculateInferenceCost(
+        'openai',
+        env.INFERENCE_MODEL,
+        tokensInput,
+        tokensOutput
+      );
 
       return {
         summary,
         tokensInput,
         tokensOutput,
-        cost: totalCost
+        cost: costCalculation.totalCost
       };
     } catch (error) {
       logger.error('OpenAI summary generation error:', error);

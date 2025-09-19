@@ -2,6 +2,7 @@ import { prisma } from '../config/database';
 import { OpenAIService } from './openaiService';
 import { RAGService } from './ragService';
 import { AnalyticsService } from './analyticsService';
+import { TaskQueueService } from './taskQueueService';
 import logger from '../config/logger';
 import bcrypt from 'bcryptjs';
 import { 
@@ -17,12 +18,12 @@ import type { ChatThread, ChatMessage, CreateMessageRequest } from '@fluxo/share
 export class ChatService {
   private openaiService: OpenAIService;
   private ragService: RAGService;
-  private analyticsService: AnalyticsService;
+  private taskQueue: TaskQueueService;
 
   constructor() {
     this.openaiService = new OpenAIService();
     this.ragService = new RAGService();
-    this.analyticsService = new AnalyticsService();
+    this.taskQueue = new TaskQueueService();
   }
 
   async createThread(userId: string, title?: string): Promise<ChatThread> {
@@ -249,15 +250,21 @@ export class ChatService {
         },
       });
 
-      // Update user analytics for user message (embedding only)
-      await this.analyticsService.updateUserUsageAggregations(userId, {
-        tokensInput: 0,
-        tokensOutput: 0,
-        tokensEmbedding: ragResult.embeddingTokens,
-        costUsd: 0,
-        embeddingCostUsd: Number(ragResult.embeddingCost),
-        createdAt: userMessage.createdAt,
-        isNewThread: previousMessages.length === 0,
+      // Queue user analytics update asynchronously (embedding only)
+      this.taskQueue.enqueueTask('analytics_update', {
+        userId,
+        data: {
+          tokensInput: 0,
+          tokensOutput: 0,
+          tokensEmbedding: ragResult.embeddingTokens,
+          costUsd: 0,
+          embeddingCostUsd: Number(ragResult.embeddingCost),
+          createdAt: userMessage.createdAt,
+          isNewThread: previousMessages.length === 0,
+        },
+        type: 'user_usage'
+      }).catch(error => {
+        logger.error('Failed to queue user analytics update:', error);
       });
 
       // Update thread title if it's the first message
@@ -281,9 +288,9 @@ export class ChatService {
       }
       
       // Add recent conversation history (last 5 messages or pairs)
-      const recentMessages = previousMessages.slice(-10).map(m => ({ 
-        role: m.role, 
-        content: m.content 
+      const recentMessages = previousMessages.slice(-10).map((m: ChatMessage) => ({
+        role: m.role,
+        content: m.content
       }));
       
       contextMessages.push(...recentMessages);
@@ -307,33 +314,47 @@ export class ChatService {
             },
           });
 
-          // Update user analytics for assistant message (inference tokens and cost)
-          await this.analyticsService.updateUserUsageAggregations(userId, {
-            tokensInput: chunk.tokensInput,
-            tokensOutput: chunk.tokensOutput,
-            tokensEmbedding: 0,
-            costUsd: Number(chunk.cost),
-            embeddingCostUsd: 0,
-            createdAt: assistantMessage.createdAt,
-            isNewThread: false, // Already counted in user message
+          // Queue analytics updates asynchronously for better performance
+          await Promise.all([
+            this.taskQueue.enqueueTask('analytics_update', {
+              userId,
+              data: {
+                tokensInput: chunk.tokensInput,
+                tokensOutput: chunk.tokensOutput,
+                tokensEmbedding: 0,
+                costUsd: Number(chunk.cost),
+                embeddingCostUsd: 0,
+                createdAt: assistantMessage.createdAt,
+                isNewThread: false,
+              },
+              type: 'user_usage'
+            }),
+
+            this.taskQueue.enqueueTask('analytics_update', {
+              data: {
+                tokensInput: chunk.tokensInput,
+                tokensOutput: chunk.tokensOutput,
+                tokensEmbedding: ragResult.embeddingTokens,
+                costUsd: Number(chunk.cost),
+                embeddingCostUsd: Number(ragResult.embeddingCost),
+                createdAt: assistantMessage.createdAt,
+                isNewThread: previousMessages.length === 0,
+              },
+              type: 'system_usage'
+            }),
+
+            // Update daily usage (legacy method - can be removed later)
+            this.updateDailyUsage(userId),
+          ]);
+
+          // Queue thread summary generation asynchronously
+          this.taskQueue.enqueueTask('summary_generation', {
+            threadId: request.threadId,
+            messages: [...previousMessages, userMessage, assistantMessage],
+            userId
+          }).catch(error => {
+            logger.error('Failed to queue summary generation:', error);
           });
-
-          // Update system analytics
-          await this.analyticsService.updateSystemUsageAggregations({
-            tokensInput: chunk.tokensInput,
-            tokensOutput: chunk.tokensOutput,
-            tokensEmbedding: ragResult.embeddingTokens,
-            costUsd: Number(chunk.cost),
-            embeddingCostUsd: Number(ragResult.embeddingCost),
-            createdAt: assistantMessage.createdAt,
-            isNewThread: previousMessages.length === 0,
-          });
-
-          // Update daily usage (legacy method - can be removed later)
-          await this.updateDailyUsage(userId);
-
-          // Update thread summary after every new conversation
-          await this.updateThreadSummary(request.threadId, [...previousMessages, userMessage, assistantMessage]);
 
           yield {
             type: 'complete' as const,
@@ -430,64 +451,8 @@ export class ChatService {
     });
   }
 
-  private async updateThreadSummary(threadId: string, allMessages: ChatMessage[]): Promise<void> {
-    try {
-      // Only update summary if we have at least 4 messages (2 exchanges)
-      if (allMessages.length < 4) {
-        return;
-      }
-
-      // Prepare conversation for summarization
-      const conversationText = allMessages
-        .map(msg => `${msg.role}: ${msg.content}`)
-        .join('\n');
-
-      // Generate summary using OpenAI
-      const summaryPrompt = [
-        {
-          role: 'system',
-          content: 'You are a helpful assistant that creates concise summaries of conversations. Create a summary that captures the main topics, key decisions, and important context from this conversation. Keep it under 200 words and focus on information that would be useful for continuing the conversation later.'
-        },
-        {
-          role: 'user',
-          content: `Please summarize this conversation:\n\n${conversationText}`
-        }
-      ];
-
-      // Generate summary (non-streaming) with cost tracking
-      const summaryResult = await this.openaiService.generateSummary(summaryPrompt);
-
-      // Update thread with new summary
-      await prisma.chatThread.update({
-        where: { id: threadId },
-        data: { summary: summaryResult.summary },
-      });
-
-      // Track summary generation costs in user analytics
-      // Get the thread owner's userId from the thread ID
-      const thread = await prisma.chatThread.findUnique({
-        where: { id: threadId },
-        select: { userId: true }
-      });
-      
-      if (thread?.userId) {
-        await this.analyticsService.updateUserUsageAggregations(thread.userId, {
-          tokensInput: summaryResult.tokensInput,
-          tokensOutput: summaryResult.tokensOutput,
-          tokensEmbedding: 0,
-          costUsd: summaryResult.cost,
-          embeddingCostUsd: 0,
-          createdAt: new Date(),
-          isNewThread: false,
-        });
-      }
-
-      logger.info(`Thread summary updated: ${threadId}`);
-    } catch (error) {
-      logger.error('Update thread summary error:', error);
-      // Don't throw error to avoid breaking the chat flow
-    }
-  }
+  // Thread summary is now handled asynchronously via task queue
+  // The updateThreadSummary method has been moved to TaskQueueService.handleSummaryGeneration
 
   private generateThreadTitle(firstMessage: string): string {
     // Generate a short title from the first message
