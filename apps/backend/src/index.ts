@@ -3,6 +3,7 @@ import { env } from './config/env';
 import { connectRedis } from './config/redis';
 import { prisma } from './config/database';
 import logger from './config/logger';
+import { InitializationService } from './services/initializationService';
 
 async function startServer() {
   try {
@@ -12,7 +13,12 @@ async function startServer() {
     // Test database connection
     await prisma.$connect();
     logger.info('Connected to PostgreSQL database');
-    
+
+    // Initialize application services (model pricing, task queue, etc.)
+    const initService = InitializationService.getInstance();
+    await initService.initialize();
+    logger.info('✅ Application services initialized');
+
     // Start the server
     const server = app.listen(env.PORT, () => {
       logger.info(`🚀 Server running on port ${env.PORT}`);
@@ -23,6 +29,7 @@ async function startServer() {
     // Graceful shutdown
     process.on('SIGTERM', async () => {
       logger.info('SIGTERM received, shutting down gracefully');
+      await initService.shutdown();
       server.close(() => {
         logger.info('Process terminated');
       });
@@ -30,6 +37,7 @@ async function startServer() {
 
     process.on('SIGINT', async () => {
       logger.info('SIGINT received, shutting down gracefully');
+      await initService.shutdown();
       await prisma.$disconnect();
       server.close(() => {
         logger.info('Process terminated');
