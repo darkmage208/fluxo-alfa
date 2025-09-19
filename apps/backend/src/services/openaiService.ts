@@ -107,9 +107,6 @@ export class OpenAIService {
         if (chunk.usage) {
           tokensInput = chunk.usage.prompt_tokens;
           tokensOutput = chunk.usage.completion_tokens;
-          logger.info('OpenAI returned usage data:', { tokensInput, tokensOutput });
-        } else {
-          logger.warn('OpenAI did not return usage data in streaming response');
         }
       }
 
@@ -117,11 +114,9 @@ export class OpenAIService {
       if (!tokensInput) {
         const inputText = allMessages.map(m => m.content).join(' ');
         tokensInput = calculateTokens(inputText);
-        logger.info('Using fallback token estimation for input:', { inputText: inputText.substring(0, 100), tokensInput });
       }
       if (!tokensOutput) {
         tokensOutput = calculateTokens(fullResponse);
-        logger.info('Using fallback token estimation for output:', { outputText: fullResponse.substring(0, 100), tokensOutput });
       }
 
       // Send any remaining content in the buffer
@@ -145,13 +140,6 @@ export class OpenAIService {
         tokensInput,
         tokensOutput
       );
-
-      logger.info('Final cost calculation:', {
-        tokensInput,
-        tokensOutput,
-        costCalculation,
-        model: env.INFERENCE_MODEL
-      });
 
       yield {
         content: '',

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Pagination } from '@/components/ui/pagination';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +38,11 @@ const SourcesPage = () => {
   const [sources, setSources] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [totalItems, setTotalItems] = useState(0);
   const [isCreating, setIsCreating] = useState(false);
   const [newSource, setNewSource] = useState({ title: '', rawText: '', tags: '' });
   const [selectedSource, setSelectedSource] = useState(null);
@@ -45,12 +51,14 @@ const SourcesPage = () => {
 
   useEffect(() => {
     loadSources();
-  }, [searchTerm]);
+  }, [searchTerm, currentPage, pageSize]);
 
   const loadSources = async () => {
+    setIsLoading(true);
     try {
-      const response = await adminApiService.getSources(1, 100, searchTerm);
+      const response = await adminApiService.getSources(currentPage, pageSize, searchTerm);
       setSources(response.data);
+      setTotalItems(response.pagination.total);
     } catch (error: any) {
       toast({
         title: "Failed to load sources",
@@ -61,6 +69,23 @@ const SourcesPage = () => {
       setIsLoading(false);
     }
   };
+
+  // Pagination handlers
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1); // Reset to first page when searching
+  };
+
+  const totalPages = Math.ceil(totalItems / pageSize);
 
   const handleCreateSource = async () => {
     if (!newSource.title.trim() || !newSource.rawText.trim()) {
@@ -82,6 +107,8 @@ const SourcesPage = () => {
       
       setNewSource({ title: '', rawText: '', tags: '' });
       setIsCreating(false);
+      // Reset to first page to show the new source
+      setCurrentPage(1);
       await loadSources();
       
       toast({
@@ -231,7 +258,7 @@ const SourcesPage = () => {
             <Input
               placeholder="Search sources..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="max-w-sm"
             />
           </div>
@@ -241,7 +268,19 @@ const SourcesPage = () => {
       {/* Sources Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Knowledge Base Sources ({sources.length})</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>
+              Knowledge Base Sources
+              {!isLoading && (
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                  ({totalItems} total)
+                </span>
+              )}
+            </CardTitle>
+            {isLoading && (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -350,12 +389,28 @@ const SourcesPage = () => {
               </tbody>
             </table>
             
-            {sources.length === 0 && (
+            {sources.length === 0 && !isLoading && (
               <div className="text-center py-8 text-gray-500">
-                No sources found. Add your first knowledge base source to get started.
+                {searchTerm ? `No sources found matching "${searchTerm}".` : 'No sources found. Add your first knowledge base source to get started.'}
               </div>
             )}
           </div>
+
+          {/* Pagination */}
+          {totalItems > 0 && (
+            <div className="border-t pt-4 mt-4">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                pageSize={pageSize}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                isLoading={isLoading}
+                pageSizeOptions={[10, 20, 50, 100]}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 
