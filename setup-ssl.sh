@@ -42,6 +42,10 @@ docker run --rm -v fluxo-certbot-data-prod:/etc/letsencrypt alpine:latest \
 
 # Get SSL certificate
 echo "🔐 Obtaining fresh SSL certificate from Let's Encrypt..."
+echo "📋 Requesting certificate for: $DOMAIN, www.$DOMAIN, api.$DOMAIN, admin.$DOMAIN"
+
+# First, let's check if the webroot challenge is accessible
+echo "🔍 Testing webroot challenge accessibility..."
 docker compose -f docker-compose.prod.yml run --rm certbot \
     certonly \
     --webroot \
@@ -50,11 +54,43 @@ docker compose -f docker-compose.prod.yml run --rm certbot \
     --agree-tos \
     --no-eff-email \
     --non-interactive \
-    --expand \
-    -d $DOMAIN \
-    -d www.$DOMAIN \
-    -d api.$DOMAIN \
-    -d admin.$DOMAIN
+    --dry-run \
+    -d $DOMAIN
+
+if [ $? -eq 0 ]; then
+    echo "✅ Dry run successful, proceeding with actual certificate request..."
+    docker compose -f docker-compose.prod.yml run --rm certbot \
+        certonly \
+        --webroot \
+        --webroot-path=/var/www/certbot \
+        --email $EMAIL \
+        --agree-tos \
+        --no-eff-email \
+        --non-interactive \
+        -d $DOMAIN \
+        -d www.$DOMAIN \
+        -d api.$DOMAIN \
+        -d admin.$DOMAIN
+else
+    echo "❌ Dry run failed, trying standalone mode instead..."
+    # Stop nginx temporarily for standalone mode
+    docker compose -f docker-compose.prod.yml stop nginx
+
+    docker compose -f docker-compose.prod.yml run --rm --ports 80:80 certbot \
+        certonly \
+        --standalone \
+        --email $EMAIL \
+        --agree-tos \
+        --no-eff-email \
+        --non-interactive \
+        -d $DOMAIN \
+        -d www.$DOMAIN \
+        -d api.$DOMAIN \
+        -d admin.$DOMAIN
+
+    # Restart nginx
+    docker compose -f docker-compose.prod.yml start nginx
+fi
 
 if [ $? -eq 0 ]; then
     echo "✅ SSL certificate obtained successfully!"
