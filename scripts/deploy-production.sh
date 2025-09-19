@@ -76,6 +76,10 @@ docker compose -f docker-compose.prod.yml down --remove-orphans || true
 print_status "Building application images..."
 docker compose -f docker-compose.prod.yml build --no-cache
 
+# Remove existing network if it has incorrect labels
+print_status "Cleaning up existing networks..."
+docker network rm fluxo-network-prod 2>/dev/null || true
+
 # Create networks and volumes
 print_status "Creating Docker networks and volumes..."
 docker network create fluxo-network-prod 2>/dev/null || true
