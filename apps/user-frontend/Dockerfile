@@ -15,7 +15,8 @@ COPY package*.json ./
 COPY packages/shared/package*.json ./packages/shared/
 COPY apps/user-frontend/package*.json ./apps/user-frontend/
 
-RUN npm ci
+# Install all dependencies including dev dependencies for build
+RUN npm ci --include=dev
 
 # Copy source code
 COPY packages/shared ./packages/shared
@@ -27,6 +28,11 @@ RUN npm run build
 
 # Build frontend with environment variables
 WORKDIR /app/apps/user-frontend
+
+# Install frontend-specific dependencies if needed
+RUN npm ci --include=dev
+
+# Build with environment variables
 RUN echo "Building with VITE_API_URL=$VITE_API_URL" && npm run build
 
 # Production stage
