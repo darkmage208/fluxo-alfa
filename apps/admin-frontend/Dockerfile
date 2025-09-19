@@ -27,13 +27,11 @@ WORKDIR /app/packages/shared
 RUN npm run build
 
 # Build frontend with environment variables
-WORKDIR /app/apps/admin-frontend
+WORKDIR /app
 
-# Install frontend-specific dependencies if needed
-RUN npm ci --include=dev
-
-# Build with environment variables
-RUN echo "Building with VITE_API_URL=$VITE_API_URL" && npm run build
+# Build using workspace command from root
+RUN echo "Building admin-frontend with VITE_API_URL=$VITE_API_URL" && \
+    npm run build --workspace=@fluxo/admin-frontend
 
 # Production stage
 FROM nginx:alpine
