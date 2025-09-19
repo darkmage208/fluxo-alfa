@@ -1,5 +1,5 @@
 import express from 'express';
-// import cors from 'cors'; // CORS handled by nginx in production
+import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
@@ -21,11 +21,13 @@ const app = express();
 // Security middleware
 app.use(helmet());
 
-// CORS configuration - handled by nginx in production
-// app.use(cors({
-//   origin: env.ALLOWED_ORIGINS,
-//   credentials: true,
-// }));
+// CORS configuration - re-enabled with specific origins to fix duplicate header issue
+app.use(cors({
+  origin: ['https://fluxoalfa.com.br', 'https://admin.fluxoalfa.com.br', 'https://www.fluxoalfa.com.br'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+}));
 
 // Rate limiting
 const generalLimiter = rateLimit({
