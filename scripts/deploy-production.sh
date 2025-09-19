@@ -41,10 +41,10 @@ if [[ $EUID -eq 0 ]]; then
     print_warning "Running as root. Make sure this is intended."
 fi
 
-# Check if .env.production exists
-if [ ! -f ".env.production" ]; then
-    print_error ".env.production file not found!"
-    print_status "Please copy .env.example to .env.production and configure it."
+# Check if .env exists
+if [ ! -f ".env" ]; then
+    print_error ".env file not found!"
+    print_status "Please copy .env.production to .env and configure it."
     exit 1
 fi
 

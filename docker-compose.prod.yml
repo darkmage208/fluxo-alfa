@@ -54,7 +54,7 @@ services:
       - ADMIN_FRONTEND_URL=https://admin.fluxoalfa.com.br
       - ALLOWED_ORIGINS=https://fluxoalfa.com.br,https://admin.fluxoalfa.com.br,https://www.fluxoalfa.com.br
     env_file:
-      - .env.production
+      - .env
     depends_on:
       postgres:
         condition: service_healthy
