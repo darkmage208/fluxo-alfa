@@ -32,7 +32,7 @@ async function main() {
     logger.info('✅ Plans created successfully');
 
     // Create admin user if it doesn't exist
-    const adminEmail = 'admin@fluxoalfa.com';
+    const adminEmail = 'equipe@fluxoalfa.com.br';
     const adminPassword = 'admin123456';
 
     const existingAdmin = await prisma.user.findUnique({
@@ -121,14 +121,19 @@ async function main() {
     ];
 
     for (const source of sampleSources) {
-      await prisma.source.upsert({
-        where: { id: `seed-${source.title.toLowerCase().replace(/\s+/g, '-')}` },
-        update: {},
-        create: {
-          ...source,
-          id: `seed-${source.title.toLowerCase().replace(/\s+/g, '-')}`,
-        },
+      // Check if source already exists by title instead of ID
+      const existingSource = await prisma.source.findFirst({
+        where: { title: source.title },
       });
+
+      if (!existingSource) {
+        await prisma.source.create({
+          data: source,
+        });
+        logger.info(`✅ Created source: ${source.title}`);
+      } else {
+        logger.info(`ℹ️ Source already exists: ${source.title}`);
+      }
     }
 
     logger.info('✅ Sample sources created successfully');
