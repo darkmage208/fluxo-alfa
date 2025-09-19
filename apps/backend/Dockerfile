@@ -29,8 +29,8 @@ RUN npx prisma generate
 # Production stage
 FROM node:18-alpine AS production
 
-# Install OpenSSL for Prisma
-RUN apk add --no-cache openssl
+# Install OpenSSL for Prisma and curl for health checks
+RUN apk add --no-cache openssl curl
 
 WORKDIR /app
 
