@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { authApi, setTokens, clearTokens, hasTokens } from '@/lib/api';
 import type { User } from '@shared/types';
+import { useChatStore } from './chat';
 
 interface AuthState {
   user: User | null;
@@ -11,6 +12,24 @@ interface AuthState {
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
+
+// Utility function to clear all application data
+const clearAllApplicationData = () => {
+  // Clear all localStorage data
+  localStorage.clear();
+
+  // Reset chat store to initial state
+  useChatStore.setState({
+    threads: [],
+    currentThread: null,
+    messages: [],
+    messageCache: new Map(),
+    isLoading: false,
+    isLoadingMoreMessages: false,
+    isStreaming: false,
+    streamingMessage: '',
+  });
+};
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -43,7 +62,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      clearTokens();
+      // Clear all application data including all stores and localStorage
+      clearAllApplicationData();
       set({ user: null, isAuthenticated: false });
     }
   },
