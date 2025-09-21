@@ -410,3 +410,18 @@ model TaskQueue {
   @@index([scheduledAt])
   @@map("task_queue")
 }
+
+// System-wide settings that can be configured by admins
+model SystemSettings {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique // e.g., "system_prompt", "ai_model", "max_tokens"
+  value       String   // JSON string for complex values
+  type        String   // text, number, boolean, json
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([key, isActive])
+  @@map("system_settings")
+}

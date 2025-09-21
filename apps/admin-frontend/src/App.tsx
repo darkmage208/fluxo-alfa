@@ -1,7 +1,9 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth';
-import { Toaster } from './components/ui/toaster';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import './styles/toast.css';
 
 // Layout
 import AdminLayout from './components/AdminLayout';
@@ -13,6 +15,7 @@ import UsersPage from './pages/UsersPage';
 import SubscriptionsPage from './pages/SubscriptionsPage';
 import SourcesPage from './pages/SourcesPage';
 import TokenUsagePage from './pages/TokenUsagePage';
+import SettingsPage from './pages/SettingsPage';
 
 // Components
 import LoadingSpinner from './components/LoadingSpinner';
@@ -46,10 +49,25 @@ function App() {
           <Route path="subscriptions" element={<SubscriptionsPage />} />
           <Route path="sources" element={<SourcesPage />} />
           <Route path="usage" element={<TokenUsagePage />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <Toaster />
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={true}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        limit={3}
+        transition={undefined}
+        className="toast-container"
+      />
     </div>
   );
 }

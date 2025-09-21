@@ -21,9 +21,9 @@ const app = express();
 // Security middleware
 app.use(helmet());
 
-// CORS configuration - re-enabled with specific origins to fix duplicate header issue
+// CORS configuration - using environment variable for allowed origins
 app.use(cors({
-  origin: ['https://fluxoalfa.com.br', 'https://admin.fluxoalfa.com.br', 'https://www.fluxoalfa.com.br'],
+  origin: env.ALLOWED_ORIGINS,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],

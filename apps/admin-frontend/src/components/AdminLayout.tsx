@@ -25,6 +25,7 @@ const AdminLayout = () => {
     { name: 'Subscriptions', href: '/subscriptions', icon: CreditCard },
     { name: 'RAG Sources', href: '/sources', icon: Database },
     { name: 'Token Usage', href: '/usage', icon: Zap },
+    { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
   const handleLogout = async () => {

@@ -132,6 +132,36 @@ export const adminApiService = {
     });
     return response.data;
   },
+
+  // System Settings management
+  getSystemSettings: async () => {
+    const response = await adminApi.get('/settings');
+    return response.data.data;
+  },
+
+  getSystemSetting: async (key: string) => {
+    const response = await adminApi.get(`/settings/${key}`);
+    return response.data.data;
+  },
+
+  updateSystemSetting: async (key: string, data: { value: string; type?: string; description?: string }) => {
+    const response = await adminApi.put(`/settings/${key}`, data);
+    return response.data.data;
+  },
+
+  createSystemSetting: async (data: { key: string; value: string; type?: string; description?: string }) => {
+    const response = await adminApi.post('/settings', data);
+    return response.data.data;
+  },
+
+  deleteSystemSetting: async (key: string) => {
+    await adminApi.delete(`/settings/${key}`);
+  },
+
+  toggleSystemSetting: async (key: string, isActive: boolean) => {
+    const response = await adminApi.patch(`/settings/${key}/toggle`, { isActive });
+    return response.data.data;
+  },
 };
 
 export default adminApi;

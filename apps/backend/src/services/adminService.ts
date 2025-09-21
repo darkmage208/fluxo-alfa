@@ -935,4 +935,170 @@ export class AdminService {
       throw error;
     }
   }
+
+  // System Settings Management
+  async getSystemSettings(): Promise<Array<{
+    id: string;
+    key: string;
+    value: string;
+    type: string;
+    description: string | null;
+    isActive: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+  }>> {
+    try {
+      const settings = await prisma.systemSettings.findMany({
+        where: { isActive: true },
+        orderBy: { key: 'asc' },
+      });
+
+      return settings;
+    } catch (error) {
+      logger.error('Get system settings error:', error);
+      throw error;
+    }
+  }
+
+  async getSystemSetting(key: string): Promise<{
+    id: string;
+    key: string;
+    value: string;
+    type: string;
+    description: string | null;
+    isActive: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+  } | null> {
+    try {
+      const setting = await prisma.systemSettings.findUnique({
+        where: { key },
+      });
+
+      return setting;
+    } catch (error) {
+      logger.error('Get system setting error:', error);
+      throw error;
+    }
+  }
+
+  async updateSystemSetting(
+    key: string,
+    value: string,
+    type?: string,
+    description?: string
+  ): Promise<{
+    id: string;
+    key: string;
+    value: string;
+    type: string;
+    description: string | null;
+    isActive: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+  }> {
+    try {
+      const updateData: any = { value };
+      if (type) updateData.type = type;
+      if (description !== undefined) updateData.description = description;
+
+      const setting = await prisma.systemSettings.upsert({
+        where: { key },
+        update: updateData,
+        create: {
+          key,
+          value,
+          type: type || 'text',
+          description,
+          isActive: true,
+        },
+      });
+
+      logger.info(`System setting updated: ${key} = ${value}`);
+      return setting;
+    } catch (error) {
+      logger.error('Update system setting error:', error);
+      throw error;
+    }
+  }
+
+  async createSystemSetting(
+    key: string,
+    value: string,
+    type: string = 'text',
+    description?: string
+  ): Promise<{
+    id: string;
+    key: string;
+    value: string;
+    type: string;
+    description: string | null;
+    isActive: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+  }> {
+    try {
+      // Check if setting already exists
+      const existingSetting = await prisma.systemSettings.findUnique({
+        where: { key },
+      });
+
+      if (existingSetting) {
+        throw new ValidationError(`System setting with key '${key}' already exists`);
+      }
+
+      const setting = await prisma.systemSettings.create({
+        data: {
+          key,
+          value,
+          type,
+          description,
+          isActive: true,
+        },
+      });
+
+      logger.info(`System setting created: ${key} = ${value}`);
+      return setting;
+    } catch (error) {
+      logger.error('Create system setting error:', error);
+      throw error;
+    }
+  }
+
+  async deleteSystemSetting(key: string): Promise<void> {
+    try {
+      await prisma.systemSettings.delete({
+        where: { key },
+      });
+
+      logger.info(`System setting deleted: ${key}`);
+    } catch (error) {
+      logger.error('Delete system setting error:', error);
+      throw error;
+    }
+  }
+
+  async toggleSystemSetting(key: string, isActive: boolean): Promise<{
+    id: string;
+    key: string;
+    value: string;
+    type: string;
+    description: string | null;
+    isActive: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+  }> {
+    try {
+      const setting = await prisma.systemSettings.update({
+        where: { key },
+        data: { isActive },
+      });
+
+      logger.info(`System setting ${isActive ? 'activated' : 'deactivated'}: ${key}`);
+      return setting;
+    } catch (error) {
+      logger.error('Toggle system setting error:', error);
+      throw error;
+    }
+  }
 }

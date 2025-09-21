@@ -312,4 +312,105 @@ router.get('/usage/users/:timeframe', async (req, res, next) => {
   }
 });
 
+// System Settings Management Routes
+
+// @route   GET /admin/settings
+// @desc    Get all system settings
+// @access  Admin
+router.get('/settings', async (req, res, next) => {
+  try {
+    const settings = await adminService.getSystemSettings();
+    res.json(createSuccessResponse(settings, 'System settings retrieved'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   GET /admin/settings/:key
+// @desc    Get specific system setting
+// @access  Admin
+router.get('/settings/:key', async (req, res, next) => {
+  try {
+    const key = req.params.key;
+    const setting = await adminService.getSystemSetting(key);
+
+    if (!setting) {
+      return res.status(404).json({ error: 'System setting not found' });
+    }
+
+    res.json(createSuccessResponse(setting, 'System setting retrieved'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   PUT /admin/settings/:key
+// @desc    Update system setting
+// @access  Admin
+router.put('/settings/:key', async (req, res, next) => {
+  try {
+    const key = req.params.key;
+    const { value, type, description } = req.body;
+
+    if (!value) {
+      return res.status(400).json({ error: 'Value is required' });
+    }
+
+    const setting = await adminService.updateSystemSetting(key, value, type, description);
+    res.json(createSuccessResponse(setting, 'System setting updated successfully'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   POST /admin/settings
+// @desc    Create new system setting
+// @access  Admin
+router.post('/settings', async (req, res, next) => {
+  try {
+    const { key, value, type = 'text', description } = req.body;
+
+    if (!key || !value) {
+      return res.status(400).json({ error: 'Key and value are required' });
+    }
+
+    const setting = await adminService.createSystemSetting(key, value, type, description);
+    res.status(201).json(createSuccessResponse(setting, 'System setting created successfully'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   DELETE /admin/settings/:key
+// @desc    Delete system setting
+// @access  Admin
+router.delete('/settings/:key', async (req, res, next) => {
+  try {
+    const key = req.params.key;
+    await adminService.deleteSystemSetting(key);
+    res.json(createSuccessResponse(null, 'System setting deleted successfully'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   PATCH /admin/settings/:key/toggle
+// @desc    Toggle system setting active status
+// @access  Admin
+router.patch('/settings/:key/toggle', async (req, res, next) => {
+  try {
+    const key = req.params.key;
+    const { isActive } = req.body;
+
+    if (typeof isActive !== 'boolean') {
+      return res.status(400).json({ error: 'isActive must be a boolean' });
+    }
+
+    const setting = await adminService.toggleSystemSetting(key, isActive);
+    res.json(createSuccessResponse(setting, `System setting ${isActive ? 'activated' : 'deactivated'} successfully`));
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

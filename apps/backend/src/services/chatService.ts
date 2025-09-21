@@ -250,10 +250,11 @@ export class ChatService {
         },
       });
 
-      // Queue user analytics update asynchronously (embedding only)
-      this.taskQueue.enqueueTask('analytics_update', {
-        userId,
-        data: {
+      // Update embedding analytics immediately for user message
+      const analyticsService = new AnalyticsService();
+
+      try {
+        await analyticsService.updateUserUsageAggregations(userId, {
           tokensInput: 0,
           tokensOutput: 0,
           tokensEmbedding: ragResult.embeddingTokens,
@@ -261,11 +262,10 @@ export class ChatService {
           embeddingCostUsd: Number(ragResult.embeddingCost),
           createdAt: userMessage.createdAt,
           isNewThread: previousMessages.length === 0,
-        },
-        type: 'user_usage'
-      }).catch(error => {
-        logger.error('Failed to queue user analytics update:', error);
-      });
+        });
+      } catch (error) {
+        logger.error('Failed to update user analytics for embedding:', error);
+      }
 
       // Update thread title if it's the first message
       if (previousMessages.length === 0) {
@@ -314,38 +314,51 @@ export class ChatService {
             },
           });
 
-          // Queue analytics updates asynchronously for better performance
+          // Update analytics immediately for real-time statistics
+          const analyticsService = new AnalyticsService();
+
           await Promise.all([
-            this.taskQueue.enqueueTask('analytics_update', {
-              userId,
-              data: {
-                tokensInput: chunk.tokensInput,
-                tokensOutput: chunk.tokensOutput,
-                tokensEmbedding: 0,
-                costUsd: Number(chunk.cost),
-                embeddingCostUsd: 0,
-                createdAt: assistantMessage.createdAt,
-                isNewThread: false,
-              },
-              type: 'user_usage'
+            // Immediate analytics updates for real-time dashboard
+            analyticsService.updateUserUsageAggregations(userId, {
+              tokensInput: chunk.tokensInput,
+              tokensOutput: chunk.tokensOutput,
+              tokensEmbedding: ragResult.embeddingTokens,
+              costUsd: Number(chunk.cost),
+              embeddingCostUsd: Number(ragResult.embeddingCost),
+              createdAt: assistantMessage.createdAt,
+              isNewThread: previousMessages.length === 0,
             }),
 
-            this.taskQueue.enqueueTask('analytics_update', {
-              data: {
-                tokensInput: chunk.tokensInput,
-                tokensOutput: chunk.tokensOutput,
-                tokensEmbedding: ragResult.embeddingTokens,
-                costUsd: Number(chunk.cost),
-                embeddingCostUsd: Number(ragResult.embeddingCost),
-                createdAt: assistantMessage.createdAt,
-                isNewThread: previousMessages.length === 0,
-              },
-              type: 'system_usage'
+            analyticsService.updateSystemUsageAggregations({
+              tokensInput: chunk.tokensInput,
+              tokensOutput: chunk.tokensOutput,
+              tokensEmbedding: ragResult.embeddingTokens,
+              costUsd: Number(chunk.cost),
+              embeddingCostUsd: Number(ragResult.embeddingCost),
+              createdAt: assistantMessage.createdAt,
+              isNewThread: previousMessages.length === 0,
             }),
 
             // Update daily usage (legacy method - can be removed later)
             this.updateDailyUsage(userId),
           ]);
+
+          // Still queue tasks for backup/redundancy (can be removed if not needed)
+          this.taskQueue.enqueueTask('analytics_update', {
+            userId,
+            data: {
+              tokensInput: chunk.tokensInput,
+              tokensOutput: chunk.tokensOutput,
+              tokensEmbedding: ragResult.embeddingTokens,
+              costUsd: Number(chunk.cost),
+              embeddingCostUsd: Number(ragResult.embeddingCost),
+              createdAt: assistantMessage.createdAt,
+              isNewThread: previousMessages.length === 0,
+            },
+            type: 'user_usage'
+          }).catch(error => {
+            logger.error('Failed to queue user analytics update:', error);
+          });
 
           // Queue thread summary generation asynchronously
           this.taskQueue.enqueueTask('summary_generation', {
