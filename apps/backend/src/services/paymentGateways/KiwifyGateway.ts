@@ -147,7 +147,7 @@ export class KiwifyGateway extends PaymentGateway {
 
             const payment: PaymentData = {
               id: eventData.payment_id || eventData.id,
-              amount: eventData.amount || 19700, // 36.00 BRL in cents
+              amount: eventData.amount || 19700, // 197.00 BRL in cents
               currency: 'BRL',
               status: 'succeeded',
               type: 'subscription',
@@ -185,7 +185,7 @@ export class KiwifyGateway extends PaymentGateway {
 
             const payment: PaymentData = {
               id: eventData.payment_id || eventData.id,
-              amount: eventData.amount || subscription.metadata?.amount || 3600,
+              amount: eventData.amount || subscription.metadata?.amount || 19700,
               currency: 'BRL',
               status: 'failed',
               type: 'subscription',
@@ -203,7 +203,7 @@ export class KiwifyGateway extends PaymentGateway {
         case 'pix_gerado':
           const pixPayment: PaymentData = {
             id: eventData.payment_id || eventData.id,
-            amount: eventData.amount || 19700, // 36.00 BRL in cents
+            amount: eventData.amount || 19700, // 197.00 BRL in cents
             currency: 'BRL',
             status: 'pending',
             type: 'subscription',
@@ -245,7 +245,7 @@ export class KiwifyGateway extends PaymentGateway {
         case 'compra_aprovada':
           const payment: PaymentData = {
             id: eventData.payment_id || eventData.id,
-            amount: eventData.amount || 19700, // 36.00 BRL in cents
+            amount: eventData.amount || 19700, // 197.00 BRL in cents
             currency: 'BRL',
             status: 'succeeded',
             type: 'subscription',

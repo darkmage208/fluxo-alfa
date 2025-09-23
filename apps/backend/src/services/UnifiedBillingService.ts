@@ -455,7 +455,7 @@ export class UnifiedBillingService {
       await prisma.payment.create({
         data: {
           userId,
-          amount: data.planId === 'pro' ? 3600 : 0, // 36.00 BRL in cents, adjust as needed
+          amount: data.planId === 'pro' ? 19700 : 0, // 197.00 BRL in cents, adjust as needed
           currency: 'BRL',
           status: data.status,
           type: 'subscription',
