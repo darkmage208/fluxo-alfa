@@ -131,7 +131,9 @@ export class KiwifyGateway extends PaymentGateway {
       const eventData = event.data;
 
       switch (event.type) {
+        // SUBSCRIPTION EVENTS
         case 'subscription_canceled':
+        case 'assinatura_cancelada':
           if (eventData.subscription_id) {
             const subscription = await this.getSubscription(eventData.subscription_id);
             return { subscription, action: 'subscription_canceled' };
@@ -139,13 +141,13 @@ export class KiwifyGateway extends PaymentGateway {
           break;
 
         case 'subscription_renewed':
+        case 'assinatura_renovada':
           if (eventData.subscription_id) {
             const subscription = await this.getSubscription(eventData.subscription_id);
 
-            // Create payment record for the renewal
             const payment: PaymentData = {
               id: eventData.payment_id || eventData.id,
-              amount: eventData.amount || 3600, // 36.00 BRL in cents
+              amount: eventData.amount || 19700, // 36.00 BRL in cents
               currency: 'BRL',
               status: 'succeeded',
               type: 'subscription',
@@ -158,7 +160,6 @@ export class KiwifyGateway extends PaymentGateway {
               },
             };
 
-            // Update subscription with new period for renewal
             const renewedSubscription: SubscriptionData = {
               ...subscription,
               status: 'active',
@@ -177,12 +178,14 @@ export class KiwifyGateway extends PaymentGateway {
           break;
 
         case 'subscription_late':
+        case 'subscription_overdue':
+        case 'assinatura_em_atraso':
           if (eventData.subscription_id) {
             const subscription = await this.getSubscription(eventData.subscription_id);
 
             const payment: PaymentData = {
               id: eventData.payment_id || eventData.id,
-              amount: eventData.amount || subscription.metadata?.amount || 197,
+              amount: eventData.amount || subscription.metadata?.amount || 3600,
               currency: 'BRL',
               status: 'failed',
               type: 'subscription',
@@ -195,11 +198,12 @@ export class KiwifyGateway extends PaymentGateway {
           }
           break;
 
+        // PAYMENT EVENTS
+        case 'pix_issued':
         case 'pix_gerado':
-          // PIX payment code generated - record as pending payment
           const pixPayment: PaymentData = {
             id: eventData.payment_id || eventData.id,
-            amount: eventData.amount || 3600, // 36.00 BRL in cents
+            amount: eventData.amount || 19700, // 36.00 BRL in cents
             currency: 'BRL',
             status: 'pending',
             type: 'subscription',
@@ -207,6 +211,7 @@ export class KiwifyGateway extends PaymentGateway {
             customerId: eventData.customer?.email || eventData.customer_email,
             metadata: {
               ...eventData,
+              paymentMethod: 'pix',
               pixCode: eventData.pix_code,
               pixQrCode: eventData.pix_qr_code,
               pixExpiresAt: eventData.pix_expires_at,
@@ -215,11 +220,32 @@ export class KiwifyGateway extends PaymentGateway {
 
           return { payment: pixPayment, action: 'payment_succeeded' };
 
+        case 'boleto_issued':
+        case 'boleto_gerado':
+          const boletoPayment: PaymentData = {
+            id: eventData.payment_id || eventData.id,
+            amount: eventData.amount || 19700,
+            currency: 'BRL',
+            status: 'pending',
+            type: 'subscription',
+            subscriptionId: eventData.subscription_id || eventData.id,
+            customerId: eventData.customer?.email || eventData.customer_email,
+            metadata: {
+              ...eventData,
+              paymentMethod: 'boleto',
+              boletoUrl: eventData.boleto_url,
+              boletoBarcode: eventData.boleto_barcode,
+              boletoExpiresAt: eventData.boleto_expires_at,
+            },
+          };
+
+          return { payment: boletoPayment, action: 'payment_succeeded' };
+
+        case 'purchase_approved':
         case 'compra_aprovada':
-          // Handle approved purchase - this is when we actually activate the subscription
           const payment: PaymentData = {
             id: eventData.payment_id || eventData.id,
-            amount: eventData.amount || 3600, // 36.00 BRL in cents
+            amount: eventData.amount || 19700, // 36.00 BRL in cents
             currency: 'BRL',
             status: 'succeeded',
             type: 'subscription',
@@ -228,25 +254,24 @@ export class KiwifyGateway extends PaymentGateway {
             metadata: eventData,
           };
 
-          // For Kiwify, create subscription data for successful payment
-          // This is typically a one-time payment that grants Pro access
           const subscription: SubscriptionData = {
             id: eventData.subscription_id || eventData.id,
-            status: 'active', // Payment successful = subscription active
+            status: 'active',
             customerId: eventData.customer?.email || eventData.customer_email,
             planId: 'pro', // Kiwify payments are for Pro plan
             currentPeriodStart: new Date(),
-            currentPeriodEnd: this.calculateSubscriptionEnd(new Date()), // 1 month from now
+            currentPeriodEnd: this.calculateSubscriptionEnd(new Date()),
             cancelAtPeriodEnd: false,
             metadata: eventData,
           };
 
           return { subscription, payment, action: 'subscription_created' };
 
+        case 'purchase_declined':
         case 'compra_recusada':
           const failedPayment: PaymentData = {
             id: eventData.payment_id || eventData.id,
-            amount: eventData.amount || 197,
+            amount: eventData.amount || 19700,
             currency: 'BRL',
             status: 'failed',
             type: 'subscription',
@@ -257,10 +282,11 @@ export class KiwifyGateway extends PaymentGateway {
 
           return { payment: failedPayment, action: 'payment_failed' };
 
+        case 'refund':
         case 'compra_reembolsada':
           const refundPayment: PaymentData = {
             id: eventData.payment_id || eventData.id,
-            amount: eventData.amount || 197,
+            amount: eventData.amount || 19700,
             currency: 'BRL',
             status: 'refunded',
             type: 'refund',
@@ -271,7 +297,39 @@ export class KiwifyGateway extends PaymentGateway {
 
           return { payment: refundPayment, action: 'payment_failed' };
 
+        case 'chargeback':
+        case 'estorno':
+          const chargebackPayment: PaymentData = {
+            id: eventData.payment_id || eventData.id,
+            amount: eventData.amount || 19700,
+            currency: 'BRL',
+            status: 'disputed',
+            type: 'chargeback',
+            subscriptionId: eventData.subscription_id,
+            customerId: eventData.customer?.email || eventData.customer_email,
+            metadata: {
+              ...eventData,
+              isChargeback: true,
+              chargebackReason: eventData.chargeback_reason,
+            },
+          };
+
+          return { payment: chargebackPayment, action: 'payment_failed' };
+
+        case 'abandoned_cart':
+        case 'carrinho_abandonado':
+          // Log abandoned cart for analytics, but don't create payment record
+          logger.info('Kiwify abandoned cart event:', {
+            customerId: eventData.customer?.email || eventData.customer_email,
+            productId: eventData.product_id,
+            amount: eventData.amount,
+            abandonedAt: new Date().toISOString(),
+          });
+
+          return { action: 'unknown' }; // No payment/subscription action needed
+
         default:
+          logger.warn('Unknown Kiwify webhook event type:', event.type);
           return { action: 'unknown' };
       }
 
