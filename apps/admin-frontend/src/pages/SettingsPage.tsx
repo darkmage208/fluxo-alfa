@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { adminApiService } from '@/lib/admin-api';
 import { Settings, Save, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'react-toastify';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface SystemSetting {
   id: string;
@@ -286,13 +287,79 @@ const SettingsPage = () => {
     );
   };
 
+  const CommonSettingsEditor = () => {
+    const commonSettings = settings.filter(s => ['free_message_limit'].includes(s.key));
+
+    const handleValueChange = (key: string, value: string) => {
+      // Validate free_message_limit
+      if (key === 'free_message_limit') {
+        const num = parseInt(value);
+        if (value !== '' && (isNaN(num) || num < 1 || num > 2000)) {
+          toast.warning('⚠️ Free message limit must be between 1 and 2000');
+          return;
+        }
+      }
+
+      setSettings(prev => prev.map(s =>
+        s.key === key ? { ...s, value } : s
+      ));
+    };
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Common Settings</CardTitle>
+          <CardDescription>
+            Configure general system settings and user limits
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {commonSettings.map((setting) => (
+            <div key={setting.key} className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor={setting.key}>
+                  {setting.key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </Label>
+                <Badge variant={setting.isActive ? 'default' : 'secondary'}>
+                  {setting.isActive ? 'Active' : 'Inactive'}
+                </Badge>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  id={setting.key}
+                  type="number"
+                  value={setting.value}
+                  onChange={(e) => handleValueChange(setting.key, e.target.value)}
+                  className="flex-1"
+                  min="1"
+                  max="2000"
+                  placeholder="1 - 2000"
+                />
+                <Button
+                  size="sm"
+                  onClick={() => updateSetting(setting.key, setting.value)}
+                  disabled={saving === setting.key}
+                >
+                  {saving === setting.key ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              {setting.description && (
+                <p className="text-sm text-muted-foreground">{setting.description}</p>
+              )}
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    );
+  };
+
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <RefreshCw className="w-8 h-8 animate-spin" />
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
@@ -314,6 +381,7 @@ const SettingsPage = () => {
         <TabsList>
           <TabsTrigger value="system-prompt">System Prompt</TabsTrigger>
           <TabsTrigger value="ai-settings">AI Settings</TabsTrigger>
+          <TabsTrigger value="common-settings">Common Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="system-prompt">
@@ -322,6 +390,10 @@ const SettingsPage = () => {
 
         <TabsContent value="ai-settings">
           <AISettingsEditor />
+        </TabsContent>
+
+        <TabsContent value="common-settings">
+          <CommonSettingsEditor />
         </TabsContent>
       </Tabs>
     </div>

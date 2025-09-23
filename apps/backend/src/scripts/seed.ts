@@ -250,6 +250,18 @@ Não se Apresente: Conforme a instrução original, não inicie cada mensagem co
       },
     });
 
+    await prisma.systemSettings.upsert({
+      where: { key: 'free_message_limit' },
+      update: {},
+      create: {
+        key: 'free_message_limit',
+        value: '5',
+        type: 'number',
+        description: 'Daily message limit for free users (1-2000)',
+        isActive: true,
+      },
+    });
+
     logger.info('✅ System settings created successfully');
     logger.info('🎉 Database seeding completed successfully!');
 
