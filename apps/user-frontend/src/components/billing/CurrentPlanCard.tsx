@@ -59,6 +59,15 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
             </span>
           </div>
 
+          {subscription?.paymentMethod && isPro && (
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Payment Method:</span>
+              <span className="font-semibold capitalize">
+                {subscription.paymentMethod.replace('_', ' ')}
+              </span>
+            </div>
+          )}
+
           {subscription?.currentPeriodEnd && (
             <div className="flex items-center justify-between">
               <span className="font-medium">

@@ -291,6 +291,7 @@ export class UnifiedBillingService {
       const updateData: any = {
         planId: gatewaySubscription.planId,
         status: gatewaySubscription.status,
+        paymentMethod: gateway,
         currentPeriodStart: gatewaySubscription.currentPeriodStart,
         currentPeriodEnd: gatewaySubscription.currentPeriodEnd,
         cancelAtPeriodEnd: gatewaySubscription.cancelAtPeriodEnd || false,
