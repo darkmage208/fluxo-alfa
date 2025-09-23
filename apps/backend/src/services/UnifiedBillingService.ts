@@ -11,6 +11,7 @@ import { PaymentGateway } from '../interfaces/PaymentGateway';
 import { StripeGateway } from './paymentGateways/StripeGateway';
 import { MercadoPagoGateway } from './paymentGateways/MercadoPagoGateway';
 import { KiwifyGateway } from './paymentGateways/KiwifyGateway';
+import { SubscriptionExpirationService } from './SubscriptionExpirationService';
 
 export interface CreateCheckoutSessionRequest {
   planId: string;
@@ -22,12 +23,14 @@ export interface CreateCheckoutSessionRequest {
 
 export class UnifiedBillingService {
   private gateways: Map<string, PaymentGateway>;
+  private expirationService: SubscriptionExpirationService;
 
   constructor() {
     this.gateways = new Map();
     this.gateways.set('stripe', new StripeGateway());
     this.gateways.set('mercado_pago', new MercadoPagoGateway());
     this.gateways.set('kiwify', new KiwifyGateway());
+    this.expirationService = new SubscriptionExpirationService();
   }
 
   async createCheckoutSession(userId: string, request: CreateCheckoutSessionRequest) {
@@ -44,9 +47,9 @@ export class UnifiedBillingService {
         throw new NotFoundError('User not found');
       }
 
-      // Check if user already has an active subscription
-      if (user.subscription?.status === 'active') {
-        throw new ValidationError('User already has an active subscription');
+      // Check if user already has an active Pro subscription
+      if (user.subscription?.status === 'active' && user.subscription?.planId !== 'free') {
+        throw new ValidationError('User already has an active paid subscription');
       }
 
       const checkoutData = {
@@ -63,12 +66,14 @@ export class UnifiedBillingService {
 
       const result = await gateway.createCheckoutSession(checkoutData);
 
-      // Store gateway-specific data in subscription
-      await this.upsertSubscription(userId, {
+      // DO NOT upgrade user subscription until payment is confirmed
+      // Only store payment intent metadata for tracking
+      await this.recordPaymentIntent(userId, {
         planId: request.planId,
-        status: 'pending',
-        paymentMethod: request.gateway,
+        sessionId: result.sessionId,
+        gateway: request.gateway,
         gatewayData: result.gatewayData,
+        status: 'checkout_created'
       });
 
       logger.info(`Checkout session created for user ${user.email} with ${request.gateway}: ${result.sessionId}`);
@@ -135,6 +140,14 @@ export class UnifiedBillingService {
           logger.info(`Subscription canceled for ${gateway}`);
           break;
         case 'payment_succeeded':
+          // Check if this is a renewal payment
+          if (result.subscription && result.payment?.type === 'subscription') {
+            const isRenewal = await this.expirationService.isRenewalInProgress(result.subscription.id);
+            if (isRenewal) {
+              await this.expirationService.handleRenewalPayment(result.subscription.id, result.payment);
+              logger.info(`Renewal payment processed for subscription ${result.subscription.id}`);
+            }
+          }
           logger.info(`Payment succeeded for ${gateway}`);
           break;
         case 'payment_failed':
@@ -426,6 +439,89 @@ export class UnifiedBillingService {
         return 'kiwifyTransactionId';
       default:
         throw new ValidationError(`Unsupported gateway: ${gateway}`);
+    }
+  }
+
+  private async recordPaymentIntent(userId: string, data: {
+    planId: string;
+    sessionId: string;
+    gateway: string;
+    gatewayData: any;
+    status: string;
+  }) {
+    // Store payment intent without changing user's subscription
+    // This allows tracking checkout sessions for webhook correlation
+    try {
+      await prisma.payment.create({
+        data: {
+          userId,
+          amount: data.planId === 'pro' ? 3600 : 0, // 36.00 BRL in cents, adjust as needed
+          currency: 'BRL',
+          status: data.status,
+          type: 'subscription',
+          paymentMethod: data.gateway,
+          description: `Payment intent for ${data.planId} plan`,
+          gatewayResponse: data.gatewayData,
+          metadata: {
+            sessionId: data.sessionId,
+            planId: data.planId,
+            gateway: data.gateway,
+          },
+        },
+      });
+
+      logger.info(`Payment intent recorded for user ${userId}: ${data.sessionId}`);
+    } catch (error) {
+      logger.error('Error recording payment intent:', error);
+      // Don't throw - this is not critical for checkout flow
+    }
+  }
+
+  // Method to manually trigger subscription expiration check
+  async checkExpiredSubscriptions(): Promise<void> {
+    try {
+      await this.expirationService.checkExpiredSubscriptions();
+      logger.info('Manual subscription expiration check completed');
+    } catch (error) {
+      logger.error('Manual subscription expiration check failed:', error);
+      throw error;
+    }
+  }
+
+  // Method to check if user's subscription is about to expire
+  async getSubscriptionExpirationStatus(userId: string): Promise<{
+    isExpired: boolean;
+    isInGracePeriod: boolean;
+    daysUntilExpiry: number;
+    expiryDate: Date | null;
+  }> {
+    try {
+      const subscription = await prisma.subscription.findUnique({
+        where: { userId },
+      });
+
+      if (!subscription || subscription.planId === 'free') {
+        return {
+          isExpired: false,
+          isInGracePeriod: false,
+          daysUntilExpiry: 0,
+          expiryDate: null,
+        };
+      }
+
+      const now = new Date();
+      const expiryDate = subscription.currentPeriodEnd;
+      const daysDiff = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+      return {
+        isExpired: daysDiff < 0,
+        isInGracePeriod: daysDiff < 0 && daysDiff > -3, // 3-day grace period
+        daysUntilExpiry: Math.max(0, daysDiff),
+        expiryDate,
+      };
+    } catch (error) {
+      logger.error('Error checking subscription expiration status:', error);
+      throw error;
     }
   }
 }

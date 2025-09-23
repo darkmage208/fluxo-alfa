@@ -3,6 +3,7 @@ import { OpenAIService } from './openaiService';
 import { RAGService } from './ragService';
 import { AnalyticsService } from './analyticsService';
 import { TaskQueueService } from './taskQueueService';
+import { SettingsService } from './settingsService';
 import logger from '../config/logger';
 import bcrypt from 'bcryptjs';
 import { 
@@ -19,11 +20,13 @@ export class ChatService {
   private openaiService: OpenAIService;
   private ragService: RAGService;
   private taskQueue: TaskQueueService;
+  private settingsService: SettingsService;
 
   constructor() {
     this.openaiService = new OpenAIService();
     this.ragService = new RAGService();
     this.taskQueue = new TaskQueueService();
+    this.settingsService = new SettingsService();
   }
 
   async createThread(userId: string, title?: string): Promise<ChatThread> {
@@ -94,7 +97,7 @@ export class ChatService {
     page: number = 1, 
     limit: number = 50,
     password?: string
-  ): Promise<{ messages: ChatMessage[]; total: number; hasMore: boolean; needsPassword?: boolean }> {
+  ): Promise<{ messages: any[]; total: number; hasMore: boolean; needsPassword?: boolean }> {
     try {
       // Verify thread belongs to user and get password info
       const thread = await prisma.chatThread.findFirst({
@@ -288,7 +291,7 @@ export class ChatService {
       }
       
       // Add recent conversation history (last 5 messages or pairs)
-      const recentMessages = previousMessages.slice(-10).map((m: ChatMessage) => ({
+      const recentMessages = previousMessages.slice(-10).map((m: any) => ({
         role: m.role,
         content: m.content
       }));
@@ -297,7 +300,7 @@ export class ChatService {
       contextMessages.push({ role: 'user', content: request.content });
 
       // Stream AI response
-      let assistantMessage: ChatMessage | null = null;
+      let assistantMessage: any = null;
       let fullResponse = '';
 
       for await (const chunk of this.openaiService.streamChatCompletion(contextMessages, ragResult.context)) {
@@ -401,14 +404,12 @@ export class ChatService {
       include: { plan: true },
     });
 
+    // Handle users without subscription (treat as free users)
     if (!subscription) {
-      throw new SubscriptionError('No subscription found');
-    }
-
-    // Check if plan has daily limits
-    if (subscription.plan.dailyChatLimit !== null) {
+      // For users without subscription record, apply free user limits from database settings
+      const freeMessageLimit = await this.settingsService.getFreeMessageLimit();
       const today = new Date().toISOString().split('T')[0];
-      
+
       const usage = await prisma.dailyUsage.findUnique({
         where: {
           userId_date: {
@@ -419,16 +420,61 @@ export class ChatService {
       });
 
       const todayChats = usage?.chatsCount || 0;
-      
-      if (todayChats >= subscription.plan.dailyChatLimit) {
-        throw new SubscriptionError(`Daily chat limit reached`);
+
+      if (todayChats >= freeMessageLimit) {
+        throw new SubscriptionError(`Daily chat limit reached (${freeMessageLimit} messages per day)`);
       }
+      return;
     }
 
-    // Check if subscription is active (for pro users)
-    if (subscription.planId === 'pro' && subscription.status !== 'active') {
-      throw new SubscriptionError('Subscription is not active');
+    // For users with subscription: check plan-based limits ONLY
+    // Free users: use dynamic database settings
+    if (subscription.planId === 'free') {
+      const freeMessageLimit = await this.settingsService.getFreeMessageLimit();
+      const today = new Date().toISOString().split('T')[0];
+
+      const usage = await prisma.dailyUsage.findUnique({
+        where: {
+          userId_date: {
+            userId,
+            date: new Date(today),
+          },
+        },
+      });
+
+      const todayChats = usage?.chatsCount || 0;
+
+      if (todayChats >= freeMessageLimit) {
+        throw new SubscriptionError(`Daily chat limit reached (${freeMessageLimit} messages per day)`);
+      }
+    } else if (subscription.planId === 'pro') {
+      // Pro users: check plan limits if they exist (e.g., monthly caps)
+      if (subscription.plan && subscription.plan.dailyChatLimit !== null) {
+        const today = new Date().toISOString().split('T')[0];
+
+        const usage = await prisma.dailyUsage.findUnique({
+          where: {
+            userId_date: {
+              userId,
+              date: new Date(today),
+            },
+          },
+        });
+
+        const todayChats = usage?.chatsCount || 0;
+
+        if (todayChats >= subscription.plan.dailyChatLimit) {
+          throw new SubscriptionError(`Daily chat limit reached`);
+        }
+      }
+      // If no daily limit set for Pro, they have unlimited access
     }
+
+    // NOTE: We do NOT check subscription status for messaging
+    // Per requirements: messaging is only affected by plan limits (daily/monthly caps)
+    // Free users: limited by free token count from database settings
+    // Pro users: limited by plan caps (if any) - typically unlimited
+    // Subscription status (pending, active, etc.) does NOT affect messaging ability
   }
 
   private async updateDailyUsage(userId: string): Promise<void> {

@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+// Environment variables are handled by Docker Compose in production
+// For development, load from .env using npm scripts or docker-compose
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.string().transform(Number).default('8000'),

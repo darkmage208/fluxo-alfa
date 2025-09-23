@@ -1,6 +1,8 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { AdminService } from '../services/adminService';
+import { UnifiedBillingService } from '../services/UnifiedBillingService';
+import { schedulerService } from '../services/SchedulerService';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
 import { 
   CreateSourceSchema,
@@ -12,6 +14,7 @@ import {
 
 const router = Router();
 const adminService = new AdminService();
+const billingService = new UnifiedBillingService();
 
 // Apply authentication and admin role to all admin routes
 router.use(authenticateToken);
@@ -408,6 +411,57 @@ router.patch('/settings/:key/toggle', async (req, res, next) => {
 
     const setting = await adminService.toggleSystemSetting(key, isActive);
     res.json(createSuccessResponse(setting, `System setting ${isActive ? 'activated' : 'deactivated'} successfully`));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Subscription Management Routes
+
+// @route   POST /admin/subscriptions/check-expired
+// @desc    Manual trigger for subscription expiration check
+// @access  Admin
+router.post('/subscriptions/check-expired', async (req, res, next) => {
+  try {
+    await billingService.checkExpiredSubscriptions();
+    res.json(createSuccessResponse(null, 'Subscription expiration check completed successfully'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   GET /admin/subscriptions/:userId/expiration-status
+// @desc    Get subscription expiration status for a user
+// @access  Admin
+router.get('/subscriptions/:userId/expiration-status', async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const status = await billingService.getSubscriptionExpirationStatus(userId);
+    res.json(createSuccessResponse(status, 'Subscription expiration status retrieved'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   GET /admin/scheduler/status
+// @desc    Get scheduler status and configuration
+// @access  Admin
+router.get('/scheduler/status', async (req, res, next) => {
+  try {
+    const status = schedulerService.getStatus();
+    res.json(createSuccessResponse(status, 'Scheduler status retrieved'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   POST /admin/scheduler/trigger-check
+// @desc    Manual trigger for scheduler expiration check
+// @access  Admin
+router.post('/scheduler/trigger-check', async (req, res, next) => {
+  try {
+    await schedulerService.triggerExpirationCheck();
+    res.json(createSuccessResponse(null, 'Scheduler expiration check triggered successfully'));
   } catch (error) {
     next(error);
   }

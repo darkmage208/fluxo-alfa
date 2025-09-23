@@ -1,5 +1,6 @@
 import { ModelPricingService } from './modelPricingService';
 import { TaskQueueService } from './taskQueueService';
+import { schedulerService } from './SchedulerService';
 import logger from '../config/logger';
 
 export class InitializationService {
@@ -45,6 +46,10 @@ export class InitializationService {
       this.setupPeriodicCleanup();
       logger.info('✅ Periodic cleanup scheduled');
 
+      // Initialize subscription scheduler
+      schedulerService.init();
+      logger.info('✅ Subscription scheduler initialized');
+
       this.isInitialized = true;
       logger.info('🚀 All services initialized successfully');
     } catch (error) {
@@ -60,6 +65,10 @@ export class InitializationService {
       // Stop task queue processing
       this.taskQueueService.stopProcessing();
       logger.info('✅ Task queue processing stopped');
+
+      // Shutdown scheduler
+      schedulerService.shutdown();
+      logger.info('✅ Subscription scheduler stopped');
 
       this.isInitialized = false;
       logger.info('🛑 Services shutdown complete');

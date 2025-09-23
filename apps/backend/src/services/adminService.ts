@@ -121,11 +121,11 @@ export class AdminService {
   }> {
     try {
       const skip = (page - 1) * limit;
-      const where = search 
+      const where = search
         ? {
             OR: [
               { email: { contains: search, mode: 'insensitive' as const } },
-              { id: { contains: search } },
+              { id: search }, // Exact UUID match for ID
             ],
           }
         : {};
@@ -270,7 +270,7 @@ export class AdminService {
   }
 
   async getSubscriptions(page = 1, limit = 50): Promise<{
-    subscriptions: Array<Subscription & { user: User }>;
+    subscriptions: any[];
     total: number;
   }> {
     try {

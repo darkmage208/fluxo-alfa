@@ -150,7 +150,7 @@ export class TaskQueueService {
     }
   }
 
-  private async executeTask(task: QueuedTask): Promise<void> {
+  private async executeTask(task: any): Promise<void> {
     const handler = this.handlers.get(task.taskType);
     if (!handler) {
       await this.markTaskFailed(task.id, `No handler found for task type: ${task.taskType}`);

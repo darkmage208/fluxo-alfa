@@ -145,16 +145,34 @@ export class KiwifyGateway extends PaymentGateway {
             // Create payment record for the renewal
             const payment: PaymentData = {
               id: eventData.payment_id || eventData.id,
-              amount: eventData.amount || subscription.metadata?.amount || 197,
+              amount: eventData.amount || 3600, // 36.00 BRL in cents
               currency: 'BRL',
               status: 'succeeded',
               type: 'subscription',
               subscriptionId: subscription.id,
               customerId: subscription.customerId,
-              metadata: eventData,
+              metadata: {
+                ...eventData,
+                isRenewal: true,
+                renewalDate: new Date().toISOString(),
+              },
             };
 
-            return { subscription, payment, action: 'payment_succeeded' };
+            // Update subscription with new period for renewal
+            const renewedSubscription: SubscriptionData = {
+              ...subscription,
+              status: 'active',
+              currentPeriodStart: new Date(),
+              currentPeriodEnd: this.calculateSubscriptionEnd(new Date()),
+              cancelAtPeriodEnd: false,
+              metadata: {
+                ...subscription.metadata,
+                lastRenewal: new Date().toISOString(),
+                renewalCount: (subscription.metadata?.renewalCount || 0) + 1,
+              },
+            };
+
+            return { subscription: renewedSubscription, payment, action: 'payment_succeeded' };
           }
           break;
 
@@ -177,25 +195,53 @@ export class KiwifyGateway extends PaymentGateway {
           }
           break;
 
+        case 'pix_gerado':
+          // PIX payment code generated - record as pending payment
+          const pixPayment: PaymentData = {
+            id: eventData.payment_id || eventData.id,
+            amount: eventData.amount || 3600, // 36.00 BRL in cents
+            currency: 'BRL',
+            status: 'pending',
+            type: 'subscription',
+            subscriptionId: eventData.subscription_id || eventData.id,
+            customerId: eventData.customer?.email || eventData.customer_email,
+            metadata: {
+              ...eventData,
+              pixCode: eventData.pix_code,
+              pixQrCode: eventData.pix_qr_code,
+              pixExpiresAt: eventData.pix_expires_at,
+            },
+          };
+
+          return { payment: pixPayment, action: 'payment_succeeded' };
+
         case 'compra_aprovada':
-          // Handle approved purchase (could be initial subscription)
+          // Handle approved purchase - this is when we actually activate the subscription
           const payment: PaymentData = {
             id: eventData.payment_id || eventData.id,
-            amount: eventData.amount || 197,
+            amount: eventData.amount || 3600, // 36.00 BRL in cents
             currency: 'BRL',
             status: 'succeeded',
-            type: eventData.subscription_id ? 'subscription' : 'one_time',
-            subscriptionId: eventData.subscription_id,
+            type: 'subscription',
+            subscriptionId: eventData.subscription_id || eventData.id,
             customerId: eventData.customer?.email || eventData.customer_email,
             metadata: eventData,
           };
 
-          if (eventData.subscription_id) {
-            const subscription = await this.getSubscription(eventData.subscription_id);
-            return { subscription, payment, action: 'subscription_created' };
-          } else {
-            return { payment, action: 'payment_succeeded' };
-          }
+          // For Kiwify, create subscription data for successful payment
+          // This is typically a one-time payment that grants Pro access
+          const subscription: SubscriptionData = {
+            id: eventData.subscription_id || eventData.id,
+            status: 'active', // Payment successful = subscription active
+            customerId: eventData.customer?.email || eventData.customer_email,
+            planId: 'pro', // Kiwify payments are for Pro plan
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: this.calculateSubscriptionEnd(new Date()), // 1 month from now
+            cancelAtPeriodEnd: false,
+            metadata: eventData,
+          };
+
+          return { subscription, payment, action: 'subscription_created' };
 
         case 'compra_recusada':
           const failedPayment: PaymentData = {
@@ -273,5 +319,12 @@ export class KiwifyGateway extends PaymentGateway {
       default:
         return status;
     }
+  }
+
+  private calculateSubscriptionEnd(startDate: Date): Date {
+    // For Kiwify payments, typically add 1 month
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + 1);
+    return endDate;
   }
 }

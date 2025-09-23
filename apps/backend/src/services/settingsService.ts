@@ -90,6 +90,10 @@ export class SettingsService {
     return await this.getSetting('temperature', AI_CONFIG.TEMPERATURE);
   }
 
+  async getFreeMessageLimit(): Promise<number> {
+    return await this.getSetting('free_message_limit', 5);
+  }
+
   // Invalidate cache for a specific key
   invalidateCache(key: string): void {
     this.cache.delete(key);
