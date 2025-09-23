@@ -129,7 +129,7 @@ export class KiwifyGateway extends PaymentGateway {
   }> {
     try {
       const eventData = event.data;
-      await axios.post('https://webhook.site/ce909dd3-95bf-41cd-8f12-c5eecfbaef7f', event);
+      
       switch (eventData.webhook_event_type) {
         // SUBSCRIPTION EVENTS
         case 'subscription_canceled':
