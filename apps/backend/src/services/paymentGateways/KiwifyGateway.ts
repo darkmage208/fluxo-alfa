@@ -207,7 +207,7 @@ export class KiwifyGateway extends PaymentGateway {
               amount: chargeAmountRenewal, // Amount in centavos (6023 = R$ 60.23)
               currency: 'BRL',
               status: 'succeeded',
-              type: 'subscription',
+              type: this.getPaymentType(eventData),
               subscriptionId: subscriptionIdRenewal,
               customerId: customerEmailRenewal,
               metadata: {
@@ -270,7 +270,7 @@ export class KiwifyGateway extends PaymentGateway {
               amount: chargeAmountLate, // Amount in centavos (8871 = R$ 88.71)
               currency: 'BRL',
               status: 'failed',
-              type: 'subscription',
+              type: this.getPaymentType(eventData),
               subscriptionId: subscriptionIdLate,
               customerId: customerEmailLate,
               metadata: {
@@ -335,7 +335,7 @@ export class KiwifyGateway extends PaymentGateway {
             amount: chargeAmountPix, // Amount in centavos (4830 = R$ 48.30)
             currency: 'BRL',
             status: 'pending',
-            type: 'subscription',
+            type: 'pix',
             subscriptionId: subscriptionIdPix,
             customerId: customerEmailPix,
             metadata: {
@@ -371,7 +371,7 @@ export class KiwifyGateway extends PaymentGateway {
             amount: chargeAmountBoleto, // Amount in centavos (1266 = R$ 12.66)
             currency: 'BRL',
             status: 'pending',
-            type: 'subscription',
+            type: 'boleto',
             subscriptionId: orderIdBoleto, // Using order_id as subscription identifier for boleto
             customerId: customerEmailBoleto,
             metadata: {
@@ -411,7 +411,7 @@ export class KiwifyGateway extends PaymentGateway {
             amount: chargeAmount, // Amount in centavos (500 = R$ 5.00, 3373 = R$ 33.73, 19700 = R$ 197.00)
             currency: 'BRL',
             status: 'succeeded',
-            type: 'subscription',
+            type: this.getPaymentType(eventData),
             subscriptionId: subscriptionId,
             customerId: customerEmail,
             metadata: {
@@ -465,7 +465,7 @@ export class KiwifyGateway extends PaymentGateway {
             amount: eventData.amount || 19700,
             currency: 'BRL',
             status: 'failed',
-            type: 'subscription',
+            type: this.getPaymentType(eventData),
             subscriptionId: eventData.subscription_id,
             customerId: eventData.customer?.email || eventData.customer_email,
             metadata: eventData,
@@ -620,5 +620,37 @@ export class KiwifyGateway extends PaymentGateway {
     const endDate = new Date(startDate);
     endDate.setMonth(endDate.getMonth() + 1);
     return endDate;
+  }
+
+  private getPaymentType(eventData: any): string {
+    // Map Kiwify payment methods to types
+    const paymentMethod = eventData.payment_method?.toLowerCase();
+
+    if (paymentMethod) {
+      if (paymentMethod.includes('credit') || paymentMethod.includes('card')) {
+        return 'card';
+      }
+      if (paymentMethod.includes('pix')) {
+        return 'pix';
+      }
+      if (paymentMethod.includes('boleto') || paymentMethod.includes('billet')) {
+        return 'boleto';
+      }
+      if (paymentMethod.includes('debit')) {
+        return 'debit';
+      }
+    }
+
+    // Also check event type for specific payment methods
+    const eventType = eventData.webhook_event_type?.toLowerCase();
+    if (eventType?.includes('pix')) {
+      return 'pix';
+    }
+    if (eventType?.includes('billet') || eventType?.includes('boleto')) {
+      return 'boleto';
+    }
+
+    // Default fallback
+    return 'subscription';
   }
 }
