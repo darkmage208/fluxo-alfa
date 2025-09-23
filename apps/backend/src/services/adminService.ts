@@ -29,21 +29,61 @@ export class AdminService {
 
   async getOverviewMetrics(): Promise<AdminMetrics> {
     try {
-      // Use optimized analytics service for fast pre-aggregated data
-      const optimizedMetrics = await this.analyticsService.getOptimizedOverviewMetrics();
-      
-      // Get today's data
+      // Always get direct counts from database for accurate real-time data
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
-      const [totalSubscriptions, activeSubscriptions, todayStats, todayRevenue, todayCosts] = await Promise.all([
+
+      const [
+        totalUsers,
+        activeUsers,
+        freeUsers,
+        proUsers,
+        totalSubscriptions,
+        activeSubscriptions,
+        totalChatMessages,
+        totalTokensResult,
+        totalCostResult,
+        totalRevenueResult,
+        todayRevenue,
+        todayStats,
+        todayCosts
+      ] = await Promise.all([
+        // User counts - always get fresh data
+        prisma.user.count(),
+        prisma.user.count({ where: { isActive: true } }),
+        prisma.user.count({
+          where: {
+            OR: [
+              { subscription: { planId: 'free' } },
+              { subscription: null }
+            ]
+          }
+        }),
+        prisma.user.count({ where: { subscription: { planId: 'pro' } } }),
+
+        // Subscription counts
         prisma.subscription.count(),
         prisma.subscription.count({ where: { status: 'active' } }),
-        // Get today's user activity from daily stats
-        prisma.systemDailyStats.findUnique({
-          where: { date: today }
+
+        // Chat statistics - direct from messages table
+        prisma.chatMessage.aggregate({
+          _count: { id: true },
+          _sum: { tokensInput: true, tokensOutput: true, tokensEmbedding: true }
         }),
-        // Get today's revenue from payments
+        prisma.chatMessage.aggregate({
+          _sum: { tokensInput: true, tokensOutput: true, tokensEmbedding: true }
+        }),
+        prisma.chatMessage.aggregate({
+          _sum: { costUsd: true, embeddingCostUsd: true }
+        }),
+
+        // Revenue statistics - direct from payments table
+        prisma.payment.aggregate({
+          where: { status: 'succeeded' },
+          _sum: { amount: true }
+        }),
+
+        // Today's revenue
         prisma.payment.aggregate({
           where: {
             status: 'succeeded',
@@ -51,7 +91,13 @@ export class AdminService {
           },
           _sum: { amount: true }
         }),
-        // Get today's costs from daily stats
+
+        // Today's user activity from daily stats (if exists)
+        prisma.systemDailyStats.findUnique({
+          where: { date: today }
+        }),
+
+        // Today's costs from daily stats (if exists)
         prisma.systemDailyStats.findUnique({
           where: { date: today },
           select: {
@@ -61,45 +107,65 @@ export class AdminService {
         })
       ]);
 
-      const todayActiveUsers = todayStats?.activeUsers || 0;
+      // Calculate totals from actual data
+      const totalTokens = (totalTokensResult._sum.tokensInput || 0) +
+                         (totalTokensResult._sum.tokensOutput || 0) +
+                         (totalTokensResult._sum.tokensEmbedding || 0);
+      const totalCost = (Number(totalCostResult._sum.costUsd) || 0) +
+                       (Number(totalCostResult._sum.embeddingCostUsd) || 0);
+      const totalRevenue = Number(totalRevenueResult._sum.amount) || 0;
       const todayRevenueAmount = Number(todayRevenue._sum.amount) || 0;
-      const todayTotalCosts = todayCosts ? (Number(todayCosts.costUsd) + Number(todayCosts.embeddingCostUsd)) : 0;
+      const totalChats = totalChatMessages._count.id || 0;
+
+      // Use today's stats if available, otherwise use current active users
+      const dailyActiveUsers = todayStats?.activeUsers || activeUsers;
+      const todayTotalCosts = todayCosts ?
+        (Number(todayCosts.costUsd) + Number(todayCosts.embeddingCostUsd)) : 0;
+
+      logger.info('Overview metrics calculated successfully', {
+        totalUsers,
+        activeUsers,
+        totalChats,
+        totalTokens,
+        totalCost,
+        totalRevenue
+      });
 
       return {
-        totalUsers: optimizedMetrics.totalUsers,
-        activeUsers: optimizedMetrics.activeUsers,
+        totalUsers,
+        activeUsers,
         totalSubscriptions,
         activeSubscriptions,
-        freeUsers: optimizedMetrics.freeUsers,
-        proUsers: optimizedMetrics.proUsers,
-        totalChats: optimizedMetrics.totalChats,
-        totalTokens: optimizedMetrics.totalTokens,
-        totalCost: optimizedMetrics.totalCost,
-        dailyActiveUsers: todayActiveUsers,
-        totalRevenue: optimizedMetrics.totalRevenue,
+        freeUsers,
+        proUsers,
+        totalChats,
+        totalTokens,
+        totalCost,
+        dailyActiveUsers,
+        totalRevenue,
         todayRevenue: todayRevenueAmount,
         todayTotalCosts: todayTotalCosts,
       };
     } catch (error) {
       logger.error('Get overview metrics error:', error);
-      // Fallback to current user counts if analytics service fails
+      // Comprehensive fallback with basic user counts
       try {
-        const [totalUsers, activeUsers, freeUsers, proUsers, totalSubscriptions, activeSubscriptions] = await Promise.all([
+        const [totalUsers, activeUsers, totalSubscriptions, activeSubscriptions] = await Promise.all([
           prisma.user.count(),
           prisma.user.count({ where: { isActive: true } }),
-          prisma.user.count({ where: { subscription: { planId: 'free' } } }),
-          prisma.user.count({ where: { subscription: { planId: 'pro' } } }),
           prisma.subscription.count(),
           prisma.subscription.count({ where: { status: 'active' } }),
         ]);
+
+        logger.warn('Using fallback metrics due to error', { totalUsers, activeUsers });
 
         return {
           totalUsers,
           activeUsers,
           totalSubscriptions,
           activeSubscriptions,
-          freeUsers,
-          proUsers,
+          freeUsers: Math.max(0, totalUsers - activeSubscriptions),
+          proUsers: activeSubscriptions,
           totalChats: 0,
           totalTokens: 0,
           totalCost: 0,
@@ -110,7 +176,22 @@ export class AdminService {
         };
       } catch (fallbackError) {
         logger.error('Fallback metrics error:', fallbackError);
-        throw error;
+        // Return zero metrics as last resort
+        return {
+          totalUsers: 0,
+          activeUsers: 0,
+          totalSubscriptions: 0,
+          activeSubscriptions: 0,
+          freeUsers: 0,
+          proUsers: 0,
+          totalChats: 0,
+          totalTokens: 0,
+          totalCost: 0,
+          dailyActiveUsers: 0,
+          totalRevenue: 0,
+          todayRevenue: 0,
+          todayTotalCosts: 0,
+        };
       }
     }
   }

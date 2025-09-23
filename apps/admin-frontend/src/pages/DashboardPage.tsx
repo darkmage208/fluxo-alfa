@@ -60,7 +60,9 @@ const DashboardPage = () => {
             
             const totalUsers = usersResponse.pagination?.total || usersResponse.data?.length || 0;
             const activeUsers = usersResponse.data?.filter((user: any) => user.isActive)?.length || 0;
-            const freeUsers = usersResponse.data?.filter((user: any) => user.subscription?.planId === 'free')?.length || 0;
+            const freeUsers = usersResponse.data?.filter((user: any) =>
+              !user.subscription || user.subscription?.planId === 'free' || user.subscription?.planId === null
+            )?.length || 0;
             const proUsers = usersResponse.data?.filter((user: any) => user.subscription?.planId === 'pro')?.length || 0;
             const totalSubscriptions = subscriptionsResponse.pagination?.total || subscriptionsResponse.data?.length || 0;
             const activeSubscriptions = subscriptionsResponse.data?.filter((sub: any) => sub.status === 'active')?.length || 0;
