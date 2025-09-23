@@ -135,45 +135,123 @@ export class KiwifyGateway extends PaymentGateway {
         case 'subscription_canceled':
         case 'assinatura_cancelada':
           if (eventData.subscription_id) {
-            const subscription = await this.getSubscription(eventData.subscription_id);
-            return { subscription, action: 'subscription_canceled' };
+            const customerEmail = eventData.Customer?.email || eventData.customer?.email || eventData.customer_email;
+            const subscriptionId = eventData.subscription_id;
+            const orderId = eventData.order_id;
+            const kiwifySubscription = eventData.Subscription;
+            const chargeAmount = eventData.Commissions?.charge_amount || 19700;
+
+            // Create refund payment record if order was refunded
+            let refundPayment: PaymentData | undefined;
+            if (eventData.order_status === 'refunded' && eventData.refunded_at) {
+              refundPayment = {
+                id: `${orderId}_refund`,
+                amount: chargeAmount,
+                currency: 'BRL',
+                status: 'refunded',
+                type: 'refund',
+                subscriptionId: subscriptionId,
+                customerId: customerEmail,
+                metadata: {
+                  ...eventData,
+                  kiwifyOrderId: orderId,
+                  kiwifySubscriptionId: subscriptionId,
+                  refundedAt: eventData.refunded_at,
+                  originalOrderId: orderId,
+                },
+              };
+            }
+
+            const canceledSubscription: SubscriptionData = {
+              id: subscriptionId,
+              status: 'canceled',
+              customerId: customerEmail,
+              planId: 'pro',
+              currentPeriodStart: kiwifySubscription?.start_date ? new Date(kiwifySubscription.start_date) : new Date(),
+              currentPeriodEnd: kiwifySubscription?.next_payment ? new Date(kiwifySubscription.next_payment) : new Date(),
+              cancelAtPeriodEnd: true,
+              metadata: {
+                kiwifyOrderId: orderId,
+                kiwifySubscriptionId: subscriptionId,
+                productId: eventData.Product?.product_id,
+                productName: eventData.Product?.product_name,
+                customerName: eventData.Customer?.full_name,
+                customerEmail: customerEmail,
+                canceledAt: eventData.refunded_at || new Date().toISOString(),
+                cancelReason: 'refunded',
+                subscriptionStatus: kiwifySubscription?.status,
+                subscriptionPlan: kiwifySubscription?.plan?.name,
+                subscriptionFrequency: kiwifySubscription?.plan?.frequency,
+              },
+            };
+
+            return {
+              subscription: canceledSubscription,
+              payment: refundPayment,
+              action: 'subscription_canceled'
+            };
           }
           break;
 
         case 'subscription_renewed':
         case 'assinatura_renovada':
           if (eventData.subscription_id) {
-            const subscription = await this.getSubscription(eventData.subscription_id);
+            const chargeAmountRenewal = eventData.Commissions?.charge_amount || 19700;
+            const customerEmailRenewal = eventData.Customer?.email || eventData.customer?.email || eventData.customer_email;
+            const subscriptionIdRenewal = eventData.subscription_id;
+            const orderIdRenewal = eventData.order_id;
+            const kiwifySubscription = eventData.Subscription;
 
-            const payment: PaymentData = {
-              id: eventData.payment_id || eventData.id,
-              amount: eventData.amount || 19700, // 197.00 BRL in cents
+            const renewalPayment: PaymentData = {
+              id: orderIdRenewal,
+              amount: chargeAmountRenewal, // Amount in centavos (6023 = R$ 60.23)
               currency: 'BRL',
               status: 'succeeded',
               type: 'subscription',
-              subscriptionId: subscription.id,
-              customerId: subscription.customerId,
+              subscriptionId: subscriptionIdRenewal,
+              customerId: customerEmailRenewal,
               metadata: {
                 ...eventData,
+                kiwifyOrderId: orderIdRenewal,
+                kiwifySubscriptionId: subscriptionIdRenewal,
                 isRenewal: true,
                 renewalDate: new Date().toISOString(),
+                paymentMethod: eventData.payment_method,
+                cardType: eventData.card_type,
+                cardLast4: eventData.card_last4digits,
+                installments: eventData.installments,
+                productName: eventData.Product?.product_name,
+                customerName: eventData.Customer?.full_name,
+                completedCharges: kiwifySubscription?.charges?.completed?.length || 0,
               },
             };
 
             const renewedSubscription: SubscriptionData = {
-              ...subscription,
+              id: subscriptionIdRenewal,
               status: 'active',
-              currentPeriodStart: new Date(),
-              currentPeriodEnd: this.calculateSubscriptionEnd(new Date()),
+              customerId: customerEmailRenewal,
+              planId: 'pro',
+              currentPeriodStart: kiwifySubscription?.start_date ? new Date(kiwifySubscription.start_date) : new Date(),
+              currentPeriodEnd: kiwifySubscription?.next_payment ? new Date(kiwifySubscription.next_payment) : this.calculateSubscriptionEnd(new Date()),
               cancelAtPeriodEnd: false,
               metadata: {
-                ...subscription.metadata,
+                kiwifyOrderId: orderIdRenewal,
+                kiwifySubscriptionId: subscriptionIdRenewal,
+                productId: eventData.Product?.product_id,
+                productName: eventData.Product?.product_name,
+                customerName: eventData.Customer?.full_name,
+                customerEmail: customerEmailRenewal,
+                subscriptionPlan: kiwifySubscription?.plan?.name,
+                subscriptionFrequency: kiwifySubscription?.plan?.frequency,
+                subscriptionStatus: kiwifySubscription?.status,
                 lastRenewal: new Date().toISOString(),
-                renewalCount: (subscription.metadata?.renewalCount || 0) + 1,
+                nextPayment: kiwifySubscription?.next_payment,
+                renewalCount: kiwifySubscription?.charges?.completed?.length || 1,
+                chargeAmount: chargeAmountRenewal,
               },
             };
 
-            return { subscription: renewedSubscription, payment, action: 'payment_succeeded' };
+            return { subscription: renewedSubscription, payment: renewalPayment, action: 'payment_succeeded' };
           }
           break;
 
@@ -181,88 +259,201 @@ export class KiwifyGateway extends PaymentGateway {
         case 'subscription_overdue':
         case 'assinatura_em_atraso':
           if (eventData.subscription_id) {
-            const subscription = await this.getSubscription(eventData.subscription_id);
+            const chargeAmountLate = eventData.Commissions?.charge_amount || 19700;
+            const customerEmailLate = eventData.Customer?.email || eventData.customer?.email || eventData.customer_email;
+            const subscriptionIdLate = eventData.subscription_id;
+            const orderIdLate = eventData.order_id;
+            const kiwifySubscriptionLate = eventData.Subscription;
 
-            const payment: PaymentData = {
-              id: eventData.payment_id || eventData.id,
-              amount: eventData.amount || subscription.metadata?.amount || 19700,
+            const latePayment: PaymentData = {
+              id: `${orderIdLate}_late`,
+              amount: chargeAmountLate, // Amount in centavos (8871 = R$ 88.71)
               currency: 'BRL',
               status: 'failed',
               type: 'subscription',
-              subscriptionId: subscription.id,
-              customerId: subscription.customerId,
-              metadata: eventData,
+              subscriptionId: subscriptionIdLate,
+              customerId: customerEmailLate,
+              metadata: {
+                ...eventData,
+                kiwifyOrderId: orderIdLate,
+                kiwifySubscriptionId: subscriptionIdLate,
+                isLatePayment: true,
+                latePaymentDate: new Date().toISOString(),
+                paymentMethod: eventData.payment_method,
+                cardType: eventData.card_type,
+                cardLast4: eventData.card_last4digits,
+                productName: eventData.Product?.product_name,
+                customerName: eventData.Customer?.full_name,
+                subscriptionStatus: kiwifySubscriptionLate?.status,
+                nextPaymentDue: kiwifySubscriptionLate?.next_payment,
+              },
             };
 
-            return { subscription, payment, action: 'payment_failed' };
+            const lateSubscription: SubscriptionData = {
+              id: subscriptionIdLate,
+              status: 'past_due', // Subscription is past due but not canceled yet
+              customerId: customerEmailLate,
+              planId: 'pro',
+              currentPeriodStart: kiwifySubscriptionLate?.start_date ? new Date(kiwifySubscriptionLate.start_date) : new Date(),
+              currentPeriodEnd: kiwifySubscriptionLate?.next_payment ? new Date(kiwifySubscriptionLate.next_payment) : new Date(),
+              cancelAtPeriodEnd: false, // Still active, just late
+              metadata: {
+                kiwifyOrderId: orderIdLate,
+                kiwifySubscriptionId: subscriptionIdLate,
+                productId: eventData.Product?.product_id,
+                productName: eventData.Product?.product_name,
+                customerName: eventData.Customer?.full_name,
+                customerEmail: customerEmailLate,
+                subscriptionPlan: kiwifySubscriptionLate?.plan?.name,
+                subscriptionFrequency: kiwifySubscriptionLate?.plan?.frequency,
+                subscriptionStatus: kiwifySubscriptionLate?.status,
+                lastFailedPayment: new Date().toISOString(),
+                nextPayment: kiwifySubscriptionLate?.next_payment,
+                lateReason: 'payment_failed',
+                chargeAmount: chargeAmountLate,
+                completedCharges: kiwifySubscriptionLate?.charges?.completed?.length || 0,
+                futureCharges: kiwifySubscriptionLate?.charges?.future?.length || 0,
+              },
+            };
+
+            return { subscription: lateSubscription, payment: latePayment, action: 'payment_failed' };
           }
           break;
 
         // PAYMENT EVENTS
+        case 'pix_created':
         case 'pix_issued':
         case 'pix_gerado':
+          const chargeAmountPix = eventData.Commissions?.charge_amount || 19700;
+          const customerEmailPix = eventData.Customer?.email || eventData.customer?.email || eventData.customer_email;
+          const orderIdPix = eventData.order_id || eventData.payment_id || eventData.id;
+          const subscriptionIdPix = eventData.subscription_id || orderIdPix;
+          const kiwifySubscriptionPix = eventData.Subscription;
+
           const pixPayment: PaymentData = {
-            id: eventData.payment_id || eventData.id,
-            amount: eventData.amount || 19700, // 197.00 BRL in cents
+            id: orderIdPix,
+            amount: chargeAmountPix, // Amount in centavos (4830 = R$ 48.30)
             currency: 'BRL',
             status: 'pending',
             type: 'subscription',
-            subscriptionId: eventData.subscription_id || eventData.id,
-            customerId: eventData.customer?.email || eventData.customer_email,
+            subscriptionId: subscriptionIdPix,
+            customerId: customerEmailPix,
             metadata: {
               ...eventData,
+              kiwifyOrderId: orderIdPix,
+              kiwifyOrderRef: eventData.order_ref,
+              kiwifySubscriptionId: subscriptionIdPix,
               paymentMethod: 'pix',
               pixCode: eventData.pix_code,
-              pixQrCode: eventData.pix_qr_code,
-              pixExpiresAt: eventData.pix_expires_at,
+              pixExpiration: eventData.pix_expiration,
+              orderStatus: eventData.order_status,
+              productName: eventData.Product?.product_name,
+              customerName: eventData.Customer?.full_name,
+              customerCPF: eventData.Customer?.CPF,
+              createdAt: eventData.created_at,
+              subscriptionPlan: kiwifySubscriptionPix?.plan?.name,
+              subscriptionFrequency: kiwifySubscriptionPix?.plan?.frequency,
+              subscriptionStatus: kiwifySubscriptionPix?.status,
             },
           };
 
           return { payment: pixPayment, action: 'payment_succeeded' };
 
+        case 'billet_created':
         case 'boleto_issued':
         case 'boleto_gerado':
+          const chargeAmountBoleto = eventData.Commissions?.charge_amount || 19700;
+          const customerEmailBoleto = eventData.Customer?.email || eventData.customer?.email || eventData.customer_email;
+          const orderIdBoleto = eventData.order_id || eventData.payment_id || eventData.id;
+
           const boletoPayment: PaymentData = {
-            id: eventData.payment_id || eventData.id,
-            amount: eventData.amount || 19700,
+            id: orderIdBoleto,
+            amount: chargeAmountBoleto, // Amount in centavos (1266 = R$ 12.66)
             currency: 'BRL',
             status: 'pending',
             type: 'subscription',
-            subscriptionId: eventData.subscription_id || eventData.id,
-            customerId: eventData.customer?.email || eventData.customer_email,
+            subscriptionId: orderIdBoleto, // Using order_id as subscription identifier for boleto
+            customerId: customerEmailBoleto,
             metadata: {
               ...eventData,
+              kiwifyOrderId: eventData.order_id,
+              kiwifyOrderRef: eventData.order_ref,
               paymentMethod: 'boleto',
-              boletoUrl: eventData.boleto_url,
+              boletoUrl: eventData.boleto_URL,
               boletoBarcode: eventData.boleto_barcode,
-              boletoExpiresAt: eventData.boleto_expires_at,
+              boletoExpiryDate: eventData.boleto_expiry_date,
+              orderStatus: eventData.order_status,
+              productName: eventData.Product?.product_name,
+              customerName: eventData.Customer?.full_name,
+              createdAt: eventData.created_at,
             },
           };
 
           return { payment: boletoPayment, action: 'payment_succeeded' };
 
+        case 'order_approved':
         case 'purchase_approved':
         case 'compra_aprovada':
+          // Extract amount from Commissions.charge_amount (in centavos) or fallback to 19700
+          const chargeAmount = eventData.Commissions?.charge_amount || 19700;
+          const customerEmail = eventData.Customer?.email || eventData.customer?.email || eventData.customer_email;
+          const orderId = eventData.order_id || eventData.payment_id || eventData.id;
+
+          // Use subscription_id if available, otherwise fall back to order_id
+          const subscriptionId = eventData.subscription_id || orderId;
+
+          // Extract subscription details if available
+          const kiwifySubscription = eventData.Subscription;
+          const nextPaymentDate = kiwifySubscription?.next_payment ? new Date(kiwifySubscription.next_payment) : this.calculateSubscriptionEnd(new Date());
+
           const payment: PaymentData = {
-            id: eventData.payment_id || eventData.id,
-            amount: eventData.amount || 19700, // 197.00 BRL in cents
+            id: orderId,
+            amount: chargeAmount, // Amount in centavos (500 = R$ 5.00, 3373 = R$ 33.73, 19700 = R$ 197.00)
             currency: 'BRL',
             status: 'succeeded',
             type: 'subscription',
-            subscriptionId: eventData.subscription_id || eventData.id,
-            customerId: eventData.customer?.email || eventData.customer_email,
-            metadata: eventData,
+            subscriptionId: subscriptionId,
+            customerId: customerEmail,
+            metadata: {
+              ...eventData,
+              kiwifyOrderId: eventData.order_id,
+              kiwifyOrderRef: eventData.order_ref,
+              paymentMethod: eventData.payment_method,
+              productName: eventData.Product?.product_name,
+              customerName: eventData.Customer?.full_name,
+              approvedDate: eventData.approved_date,
+              cardType: eventData.card_type,
+              cardLast4: eventData.card_last4digits,
+              installments: eventData.installments,
+            },
           };
 
           const subscription: SubscriptionData = {
-            id: eventData.subscription_id || eventData.id,
+            id: subscriptionId,
             status: 'active',
-            customerId: eventData.customer?.email || eventData.customer_email,
+            customerId: customerEmail,
             planId: 'pro', // Kiwify payments are for Pro plan
-            currentPeriodStart: new Date(),
-            currentPeriodEnd: this.calculateSubscriptionEnd(new Date()),
+            currentPeriodStart: kiwifySubscription?.start_date ? new Date(kiwifySubscription.start_date) : new Date(),
+            currentPeriodEnd: nextPaymentDate,
             cancelAtPeriodEnd: false,
-            metadata: eventData,
+            metadata: {
+              kiwifyOrderId: eventData.order_id,
+              kiwifyOrderRef: eventData.order_ref,
+              kiwifySubscriptionId: eventData.subscription_id,
+              productId: eventData.Product?.product_id,
+              productName: eventData.Product?.product_name,
+              customerName: eventData.Customer?.full_name,
+              customerCPF: eventData.Customer?.CPF || eventData.Customer?.cnpj,
+              customerMobile: eventData.Customer?.mobile,
+              customerCity: eventData.Customer?.city,
+              customerState: eventData.Customer?.state,
+              paymentMethod: eventData.payment_method,
+              chargeAmount: chargeAmount,
+              subscriptionPlan: kiwifySubscription?.plan?.name,
+              subscriptionFrequency: kiwifySubscription?.plan?.frequency,
+              nextPayment: kiwifySubscription?.next_payment,
+              subscriptionStatus: kiwifySubscription?.status,
+            },
           };
 
           return { subscription, payment, action: 'subscription_created' };
@@ -299,22 +490,67 @@ export class KiwifyGateway extends PaymentGateway {
 
         case 'chargeback':
         case 'estorno':
+          const chargeAmountChargeback = eventData.Commissions?.charge_amount || 19700;
+          const customerEmailChargeback = eventData.Customer?.email || eventData.customer?.email || eventData.customer_email;
+          const subscriptionIdChargeback = eventData.subscription_id;
+          const orderIdChargeback = eventData.order_id;
+          const kiwifySubscriptionChargeback = eventData.Subscription;
+
           const chargebackPayment: PaymentData = {
-            id: eventData.payment_id || eventData.id,
-            amount: eventData.amount || 19700,
+            id: `${orderIdChargeback}_chargeback`,
+            amount: chargeAmountChargeback, // Amount in centavos (1251 = R$ 12.51)
             currency: 'BRL',
             status: 'disputed',
             type: 'chargeback',
-            subscriptionId: eventData.subscription_id,
-            customerId: eventData.customer?.email || eventData.customer_email,
+            subscriptionId: subscriptionIdChargeback,
+            customerId: customerEmailChargeback,
             metadata: {
               ...eventData,
+              kiwifyOrderId: orderIdChargeback,
+              kiwifySubscriptionId: subscriptionIdChargeback,
               isChargeback: true,
-              chargebackReason: eventData.chargeback_reason,
+              chargebackDate: new Date().toISOString(),
+              originalOrderId: orderIdChargeback,
+              paymentMethod: eventData.payment_method,
+              cardType: eventData.card_type,
+              cardLast4: eventData.card_last4digits,
+              productName: eventData.Product?.product_name,
+              customerName: eventData.Customer?.full_name,
+              orderStatus: eventData.order_status,
             },
           };
 
-          return { payment: chargebackPayment, action: 'payment_failed' };
+          // Handle subscription impact of chargeback
+          let disputedSubscription: SubscriptionData | undefined;
+          if (subscriptionIdChargeback) {
+            disputedSubscription = {
+              id: subscriptionIdChargeback,
+              status: 'canceled', // Chargeback typically cancels subscription
+              customerId: customerEmailChargeback,
+              planId: 'pro',
+              currentPeriodStart: kiwifySubscriptionChargeback?.start_date ? new Date(kiwifySubscriptionChargeback.start_date) : new Date(),
+              currentPeriodEnd: kiwifySubscriptionChargeback?.next_payment ? new Date(kiwifySubscriptionChargeback.next_payment) : new Date(),
+              cancelAtPeriodEnd: true,
+              metadata: {
+                kiwifyOrderId: orderIdChargeback,
+                kiwifySubscriptionId: subscriptionIdChargeback,
+                productId: eventData.Product?.product_id,
+                productName: eventData.Product?.product_name,
+                customerName: eventData.Customer?.full_name,
+                canceledAt: new Date().toISOString(),
+                cancelReason: 'chargeback',
+                subscriptionPlan: kiwifySubscriptionChargeback?.plan?.name,
+                subscriptionFrequency: kiwifySubscriptionChargeback?.plan?.frequency,
+                chargebackAmount: chargeAmountChargeback,
+              },
+            };
+          }
+
+          return {
+            payment: chargebackPayment,
+            subscription: disputedSubscription,
+            action: 'payment_failed'
+          };
 
         case 'abandoned_cart':
         case 'carrinho_abandonado':
