@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FlowerConfetti } from '@/components/payment';
 import { CheckCircle, ArrowRight, Crown, MessageSquare } from 'lucide-react';
 
 const PaymentSuccessPage = () => {
@@ -16,6 +17,8 @@ const PaymentSuccessPage = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      {/* Celebratory flower animation */}
+      <FlowerConfetti duration={6000} />
       <div className="max-w-2xl w-full">
         {/* Logo */}
         <Link to="/" className="flex items-center justify-center space-x-2 mb-8 hover:opacity-80 transition-opacity">
