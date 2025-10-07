@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/store/auth';
 import { billingApi } from '@/lib/api';
 import { ProPlanFeatures, PaymentGatewaySelector, PaymentButton } from '@/components/payment';
-import { ArrowLeft, Sparkles } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 const PaymentPage = () => {
   const [selectedGateway, setSelectedGateway] = useState<string>('');
@@ -108,7 +108,7 @@ const PaymentPage = () => {
         {/* Page title */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center space-x-2 mb-4">
-            <Sparkles className="w-8 h-8 text-primary" />
+            <img src="/logo.png" alt="Fluxo Alfa Logo" className="w-8 h-8" />
             <h1 className="text-3xl font-bold text-foreground">Upgrade to Pro</h1>
           </div>
           <p className="text-muted-foreground">User: {user?.email}</p>

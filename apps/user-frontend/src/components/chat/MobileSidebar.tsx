@@ -77,9 +77,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <MessageCircle className="w-4 h-4 text-white" />
-              </div>
+              <img src="/logo.png" alt="Fluxo Alfa Logo" className="w-8 h-8 rounded-lg" />
               <h1 className="text-xl font-semibold text-foreground">Fluxo Alfa</h1>
             </div>
             <Button

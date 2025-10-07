@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/store/auth';
-import { Sparkles } from 'lucide-react';
 
 const RegisterPage = () => {
   const [email, setEmail] = useState('');
@@ -67,7 +66,7 @@ const RegisterPage = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
       {/* Logo */}
       <Link to="/" className="flex items-center space-x-2 mb-8 hover:opacity-80 transition-opacity">
-        <Sparkles className="w-8 h-8 text-primary" />
+        <img src="/logo.png" alt="Fluxo Alfa Logo" className="w-8 h-8" />
         <span className="text-2xl font-bold text-foreground">Fluxo Alfa</span>
       </Link>
 

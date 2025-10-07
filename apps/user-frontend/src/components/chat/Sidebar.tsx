@@ -89,11 +89,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onMouseLeave={() => setIsLogoHovered(false)}
             title={isCollapsed ? 'Expand sidebar' : undefined}
           >
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center transition-all duration-200 shadow-sm">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 shadow-sm">
               {isCollapsed && isLogoHovered ? (
-                <ChevronRight className="w-4 h-4 text-primary-foreground" />
+                <ChevronRight className="w-8 h-8 text-foreground" />
               ) : (
-                <MessageCircle className="w-4 h-4 text-primary-foreground" />
+                <img src="/logo.png" alt="Fluxo Alfa Logo" className="w-8 h-8" />
               )}
             </div>
             {!isCollapsed && (
