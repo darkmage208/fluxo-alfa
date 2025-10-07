@@ -8,7 +8,6 @@ const plans = [
   {
     name: "Free",
     price: "R$0",
-    priceSecondary: "$0",
     period: "forever",
     description: "Perfect for getting started",
     features: [
@@ -24,7 +23,6 @@ const plans = [
   {
     name: "Pro",
     price: "R$197",
-    priceSecondary: "$36",
     period: "per month",
     description: "Unlimited conversations and premium features",
     features: [
@@ -65,9 +63,6 @@ export const PricingSection: React.FC = () => {
                   <div className="text-4xl font-bold text-primary">
                     {plan.price}
                     <span className="text-lg text-muted-foreground font-normal">/{plan.period}</span>
-                  </div>
-                  <div className="text-lg text-muted-foreground">
-                    {plan.priceSecondary}/{plan.period}
                   </div>
                 </div>
                 <CardDescription className="text-base text-muted-foreground">{plan.description}</CardDescription>

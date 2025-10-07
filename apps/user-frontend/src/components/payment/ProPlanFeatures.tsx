@@ -57,7 +57,6 @@ export const ProPlanFeatures: React.FC = () => {
       <div className="bg-card rounded-2xl p-6 shadow-xl border-2 border-primary/20">
         <div className="text-center">
           <div className="text-4xl font-bold text-primary mb-2">R$197</div>
-          <div className="text-lg text-muted-foreground mb-2">$36</div>
           <div className="text-muted-foreground mb-4">per month</div>
           <div className="inline-flex items-center px-3 py-1 rounded-full bg-accent text-accent-foreground text-sm font-medium">
             <CheckCircle className="w-4 h-4 mr-1" />

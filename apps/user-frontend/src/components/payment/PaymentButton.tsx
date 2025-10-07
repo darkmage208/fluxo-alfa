@@ -29,7 +29,7 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({
         ) : (
           <>
             <Crown className="mr-3 h-6 w-6" />
-            Purchase Pro - $36/month (R$197)
+            Purchase Pro - R$197/month
           </>
         )}
       </Button>

@@ -87,7 +87,6 @@ export const PlanComparisonCards: React.FC<PlanComparisonCardsProps> = ({
               <div className="text-2xl font-bold text-foreground">
                 R$197
                 <span className="text-sm font-normal text-muted-foreground">/month</span>
-                <div className="text-sm text-muted-foreground">$36/month</div>
               </div>
             </div>
             {!isPro && (
