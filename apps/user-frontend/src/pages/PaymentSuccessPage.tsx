@@ -15,56 +15,62 @@ const PaymentSuccessPage = () => {
   }, [sessionId]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">
-        <Card className="text-center shadow-xl border-2 border-green-200">
+        {/* Logo */}
+        <Link to="/" className="flex items-center justify-center space-x-2 mb-8 hover:opacity-80 transition-opacity">
+          <img src="/logo.png" alt="Fluxo Alfa Logo" className="w-8 h-8" />
+          <span className="text-2xl font-bold text-foreground">Fluxo Alfa</span>
+        </Link>
+
+        <Card className="text-center shadow-lg border-border">
           <CardHeader className="pb-8">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="w-12 h-12 text-green-600" />
+            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="w-12 h-12 text-primary" />
             </div>
-            <CardTitle className="text-3xl font-bold text-green-800 mb-4">
+            <CardTitle className="text-3xl font-bold text-foreground mb-4">
               Payment Successful!
             </CardTitle>
-            <CardDescription className="text-lg text-gray-600">
+            <CardDescription className="text-lg text-muted-foreground">
               Welcome to {planName} plan! Your subscription is now active and you have access to all premium features.
             </CardDescription>
           </CardHeader>
           
           <CardContent className="space-y-8">
             {/* Success Details */}
-            <div className="bg-green-50 rounded-xl p-6 border border-green-200">
+            <div className="bg-accent rounded-xl p-6 border border-border">
               <div className="flex items-center justify-center space-x-3 mb-4">
-                <Crown className="w-6 h-6 text-yellow-600" />
-                <span className="text-xl font-semibold text-green-800">{planName} Plan Activated</span>
+                <Crown className="w-6 h-6 text-primary" />
+                <span className="text-xl font-semibold text-foreground">{planName} Plan Activated</span>
               </div>
-              <div className="text-sm text-green-700 space-y-2">
+              <div className="text-sm text-muted-foreground space-y-2">
                 <div className="flex items-center justify-center space-x-2">
                   <MessageSquare className="w-4 h-4" />
                   <span>Unlimited messages now available</span>
                 </div>
-                <div>Session ID: <code className="bg-green-100 px-2 py-1 rounded text-xs">{sessionId}</code></div>
+                <div>Session ID: <code className="bg-muted px-2 py-1 rounded text-xs">{sessionId}</code></div>
               </div>
             </div>
 
             {/* What's Next */}
             <div className="text-left">
-              <h3 className="text-lg font-semibold mb-4 text-center">What's next?</h3>
+              <h3 className="text-lg font-semibold mb-4 text-center text-foreground">What's next?</h3>
               <ul className="space-y-3">
                 <li className="flex items-start space-x-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Start unlimited conversations with our AI</span>
+                  <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-muted-foreground">Start unlimited conversations with our AI</span>
                 </li>
                 <li className="flex items-start space-x-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Access advanced AI models and features</span>
+                  <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-muted-foreground">Access advanced AI models and features</span>
                 </li>
                 <li className="flex items-start space-x-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Enjoy priority processing and support</span>
+                  <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-muted-foreground">Enjoy priority processing and support</span>
                 </li>
                 <li className="flex items-start space-x-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Manage your subscription in the billing page</span>
+                  <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-muted-foreground">Manage your subscription in the billing page</span>
                 </li>
               </ul>
             </div>
@@ -72,7 +78,7 @@ const PaymentSuccessPage = () => {
             {/* Action Buttons */}
             <div className="space-y-4 pt-6">
               <Link to="/chat" className="block">
-                <Button size="lg" className="w-full text-lg py-6 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700">
+                <Button size="lg" className="w-full text-lg py-6">
                   Start Chatting Now
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
@@ -93,10 +99,10 @@ const PaymentSuccessPage = () => {
             </div>
 
             {/* Support Notice */}
-            <div className="text-center text-sm text-gray-500 pt-4 border-t">
+            <div className="text-center text-sm text-muted-foreground pt-4 border-t border-border">
               <p>
                 Need help? Contact our support team or visit our{' '}
-                <a href="#" className="text-blue-600 hover:underline">help center</a>
+                <a href="#" className="text-primary hover:underline">help center</a>
               </p>
             </div>
           </CardContent>
