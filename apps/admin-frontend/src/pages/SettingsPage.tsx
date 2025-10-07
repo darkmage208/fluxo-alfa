@@ -366,7 +366,10 @@ const SettingsPage = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">System Settings</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold flex items-center">
+            <Settings className="w-6 h-6 lg:w-8 lg:h-8 mr-2 lg:mr-3" />
+            System Settings
+          </h1>
           <p className="text-muted-foreground">
             Configure system-wide settings and AI behavior
           </p>

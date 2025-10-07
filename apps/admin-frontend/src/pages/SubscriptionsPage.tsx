@@ -301,7 +301,7 @@ const SubscriptionsPage = () => {
   };
 
   return (
-    <div className="space-y-4 lg:space-y-6 p-4 lg:p-6">
+    <div className="space-y-4 lg:space-y-6">
       <div className="space-y-2">
         <h1 className="text-2xl lg:text-3xl font-bold flex items-center">
           <CreditCard className="w-6 h-6 lg:w-8 lg:h-8 mr-2 lg:mr-3" />

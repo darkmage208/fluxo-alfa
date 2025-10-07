@@ -6,7 +6,8 @@ import {
   DollarSign, 
   TrendingUp,
   Crown,
-  Database 
+  Database,
+  LayoutDashboard
 } from 'lucide-react';
 import { adminApiService } from '@/lib/admin-api';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -139,7 +140,10 @@ const DashboardPage = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <h1 className="text-2xl lg:text-3xl font-bold flex items-center">
+          <LayoutDashboard className="w-6 h-6 lg:w-8 lg:h-8 mr-2 lg:mr-3" />
+          Dashboard
+        </h1>
         <p className="text-muted-foreground mt-2">
           Overview of your Fluxo Alfa platform
         </p>
