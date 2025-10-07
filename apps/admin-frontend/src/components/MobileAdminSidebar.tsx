@@ -57,8 +57,11 @@ export const MobileAdminSidebar: React.FC<MobileAdminSidebarProps> = ({
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Fluxo Admin</h1>
-              <p className="text-sm text-gray-500 mt-1">{user?.email}</p>
+              <div className="flex items-center space-x-2 mb-1">
+                <img src="/logo.png" alt="Fluxo Alfa Logo" className="w-6 h-6" />
+                <h1 className="text-xl font-bold text-gray-900">Fluxo Admin</h1>
+              </div>
+              <p className="text-sm text-gray-500">{user?.email}</p>
             </div>
             <Button
               variant="ghost"

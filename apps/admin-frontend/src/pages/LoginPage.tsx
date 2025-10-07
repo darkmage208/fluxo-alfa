@@ -76,7 +76,7 @@ const LoginPage = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
-            <Shield className="w-8 h-8 text-blue-600 mr-2" />
+            <img src="/logo.png" alt="Fluxo Alfa Logo" className="w-8 h-8 mr-2" />
             <span className="text-2xl font-bold">Fluxo Admin</span>
           </div>
           <CardTitle className="text-xl">Admin Dashboard</CardTitle>

@@ -45,8 +45,11 @@ const AdminLayout = () => {
         <div className="flex flex-col h-full w-full">
           {/* Header */}
           <div className="p-6 border-b border-gray-200">
-            <h1 className="text-xl font-bold text-gray-900">Fluxo Admin</h1>
-            <p className="text-sm text-gray-500 mt-1 truncate">{user?.email}</p>
+            <div className="flex items-center space-x-2 mb-2">
+              <img src="/logo.png" alt="Fluxo Alfa Logo" className="w-6 h-6" />
+              <h1 className="text-xl font-bold text-gray-900">Fluxo Admin</h1>
+            </div>
+            <p className="text-sm text-gray-500 truncate">{user?.email}</p>
           </div>
 
           {/* Navigation */}
@@ -99,7 +102,10 @@ const AdminLayout = () => {
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <h1 className="text-lg font-semibold text-gray-900">Fluxo Admin</h1>
+          <div className="flex items-center space-x-2">
+            <img src="/logo.png" alt="Fluxo Alfa Logo" className="w-5 h-5" />
+            <h1 className="text-lg font-semibold text-gray-900">Fluxo Admin</h1>
+          </div>
           <div className="w-8" /> {/* Spacer for centering */}
         </div>
 
