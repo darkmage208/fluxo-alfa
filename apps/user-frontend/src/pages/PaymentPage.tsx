@@ -21,6 +21,12 @@ const PaymentPage = () => {
       try {
         const gatewayData = await billingApi.getPaymentGateways();
         setGateways(gatewayData);
+        
+        // Auto-select Kiwify since it's the only available gateway
+        const kiwifyGateway = gatewayData.find((g: any) => g.id === 'kiwify');
+        if (kiwifyGateway) {
+          setSelectedGateway('kiwify');
+        }
       } catch (error) {
         console.error('Failed to load payment gateways:', error);
         toast({
