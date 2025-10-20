@@ -270,8 +270,8 @@ export class ChatService {
         logger.error('Failed to update user analytics for embedding:', error);
       }
 
-      // Update thread title if it's the first message
-      if (previousMessages.length === 0) {
+      // Update thread title if it's the first message and thread has default title
+      if (previousMessages.length === 0 && thread.title === 'New Chat') {
         const title = this.generateThreadTitle(request.content);
         await prisma.chatThread.update({
           where: { id: request.threadId },
