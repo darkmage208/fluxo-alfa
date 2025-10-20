@@ -67,7 +67,7 @@ const RegisterPage = () => {
       {/* Logo */}
       <Link to="/" className="flex items-center space-x-2 mb-8 hover:opacity-80 transition-opacity">
         <img src="/logo.png" alt="Fluxo Alfa Logo" className="w-8 h-8" />
-        <span className="text-2xl font-bold text-foreground">Fluxo Alfa</span>
+        <img src="/fluxoalfa.png" alt="Fluxo Alfa" className="h-6 w-auto" />
       </Link>
 
       <Card className="w-full max-w-md">

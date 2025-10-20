@@ -115,8 +115,9 @@ const PaymentPage = () => {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center space-x-2 mb-4">
             <img src="/logo.png" alt="Fluxo Alfa Logo" className="w-8 h-8" />
-            <h1 className="text-3xl font-bold text-foreground">Upgrade to Pro</h1>
+            <img src="/fluxoalfa.png" alt="Fluxo Alfa" className="h-7 w-auto" />
           </div>
+          <h1 className="text-3xl font-bold text-foreground">Upgrade to Pro</h1>
           <p className="text-muted-foreground">User: {user?.email}</p>
         </div>
 

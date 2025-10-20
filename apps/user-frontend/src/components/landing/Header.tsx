@@ -8,9 +8,7 @@ export const Header: React.FC = () => {
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center space-x-2">
           <img src="/logo.png" alt="Fluxo Alfa Logo" className="w-8 h-8" />
-          <span className="text-2xl font-bold text-foreground">
-            Fluxo Alfa
-          </span>
+          <img src="/fluxoalfa.png" alt="Fluxo Alfa" className="h-6 w-auto" />
         </div>
         <div className="flex items-center space-x-4">
           <Link to="/login">

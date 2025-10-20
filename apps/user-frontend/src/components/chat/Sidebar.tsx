@@ -97,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </div>
             {!isCollapsed && (
-              <h1 className="text-xl font-semibold text-foreground tracking-tight">Fluxo Alfa</h1>
+              <img src="/fluxoalfa.png" alt="Fluxo Alfa" className="h-5 w-auto" />
             )}
           </div>
           {!isCollapsed && onToggleCollapse && (

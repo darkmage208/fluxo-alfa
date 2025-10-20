@@ -78,7 +78,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
               <img src="/logo.png" alt="Fluxo Alfa Logo" className="w-8 h-8 rounded-lg" />
-              <h1 className="text-xl font-semibold text-foreground">Fluxo Alfa</h1>
+              <img src="/fluxoalfa.png" alt="Fluxo Alfa" className="h-6 w-auto" />
             </div>
             <Button
               variant="ghost"

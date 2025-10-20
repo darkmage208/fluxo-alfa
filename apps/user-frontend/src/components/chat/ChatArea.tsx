@@ -108,7 +108,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           </Button>
           <div className="flex items-center space-x-2">
             <img src="/logo.png" alt="Fluxo Alfa Logo" className="w-6 h-6 rounded-md" />
-            <h1 className="text-lg font-semibold text-foreground">Fluxo Alfa</h1>
+            <img src="/fluxoalfa.png" alt="Fluxo Alfa" className="h-5 w-auto" />
           </div>
         </div>
       </div>
