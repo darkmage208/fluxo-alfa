@@ -11,7 +11,7 @@ const plans = [
     period: "forever",
     description: "Perfect for getting started",
     features: [
-      "10 messages per day",
+      "5 messages per day",
       "Basic AI responses",
       "Standard support",
       "Web access"

@@ -32,7 +32,7 @@ export const PlanComparisonCards: React.FC<PlanComparisonCardsProps> = ({
           <div className="space-y-3">
             <div className="flex items-center">
               <Check className="w-4 h-4 mr-2 text-green-500" />
-              <span>10 chats per day</span>
+              <span>5 chats per day</span>
             </div>
             <div className="flex items-center">
               <Check className="w-4 h-4 mr-2 text-green-500" />
