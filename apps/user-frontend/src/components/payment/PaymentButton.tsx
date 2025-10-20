@@ -19,7 +19,7 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({
         onClick={onPayment}
         disabled={!selectedGateway || isProcessing}
         size="lg"
-        className="w-full text-xl py-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-xl"
+        className="w-full text-lg py-6"
       >
         {isProcessing ? (
           <>
