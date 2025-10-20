@@ -49,34 +49,31 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   }, [isStreaming]);
 
   return (
-    <form onSubmit={onSendMessage} className="flex items-end space-x-3 sm:space-x-4">
-      <div className="flex-1 relative">
-        <div className="relative rounded-2xl border border-border bg-background/80 backdrop-blur-sm shadow-sm transition-all duration-200 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary">
-          <textarea
-            ref={textareaRef}
-            value={messageInput}
-            onChange={(e) => {
-              setMessageInput(e.target.value);
-              autoResizeTextarea();
-            }}
-            onKeyDown={handleTextareaKeyDown}
-            placeholder="Type your message..."
-            disabled={isStreaming}
-            className="w-full p-3 sm:p-4 bg-transparent resize-none focus:outline-none placeholder:text-muted-foreground text-foreground disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl text-sm sm:text-base"
-            style={{ minHeight: '48px', maxHeight: '180px' }}
-            rows={1}
-          />
-        </div>
+    <form onSubmit={onSendMessage} className="w-full">
+      <div className="relative flex rounded-2xl border border-border bg-background/80 backdrop-blur-sm shadow-sm transition-all duration-200 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary">
+        <textarea
+          ref={textareaRef}
+          value={messageInput}
+          onChange={(e) => {
+            setMessageInput(e.target.value);
+            autoResizeTextarea();
+          }}
+          onKeyDown={handleTextareaKeyDown}
+          placeholder="Type your message..."
+          disabled={isStreaming}
+          className="w-full p-3 sm:p-4 pr-12 sm:pr-14 bg-transparent resize-none focus:outline-none placeholder:text-muted-foreground text-foreground disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl text-sm sm:text-base"
+          style={{ minHeight: '40px', maxHeight: '150px' }}
+          rows={1}
+        />
+        <Button
+          type="submit"
+          disabled={!messageInput.trim() || isStreaming}
+          className="absolute right-2 bottom-2 h-8 w-8 sm:h-9 sm:w-9 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 bg-primary hover:bg-primary/90 text-primary-foreground"
+          size="icon"
+        >
+          <Send className="w-4 h-4" />
+        </Button>
       </div>
-      <Button
-        type="submit"
-        disabled={!messageInput.trim() || isStreaming}
-        variant="ghost"
-        className="h-12 w-12 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex-shrink-0 bg-background/20 backdrop-blur-md border border-border/30 hover:bg-background/30 hover:border-border/50"
-        size="icon"
-      >
-        <Send className="w-4 h-4 sm:w-5 sm:h-5" />
-      </Button>
     </form>
   );
 };

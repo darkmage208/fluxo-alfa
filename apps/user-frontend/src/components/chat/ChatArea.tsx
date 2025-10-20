@@ -94,7 +94,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   }, [messages.length, isLoadingMoreMessages, previousScrollHeight, setPreviousScrollHeight]);
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col relative">
       {/* Mobile Header */}
       <div className="sm:hidden p-4 border-b border-border bg-card">
         <div className="flex items-center justify-between">
@@ -116,7 +116,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       {currentThread ? (
         <>
           {/* Messages */}
-          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6 thin-scrollbar">
+          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6 pb-24 sm:pb-28 thin-scrollbar">
             <div className="w-full max-w-4xl mx-auto space-y-6" style={{ minWidth: '320px' }}>
               {/* Load more messages trigger */}
               {hasMoreMessages && (
@@ -181,7 +181,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           </div>
 
           {/* Message Input */}
-          <div className="border-t border-border bg-card/50 backdrop-blur-sm p-4 sm:p-6">
+          <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
             <div className="w-full max-w-4xl mx-auto" style={{ minWidth: '320px' }}>
               <MessageInput
                 messageInput={messageInput}
