@@ -8,3 +8,4 @@ export { ChatArea } from './ChatArea';
 export { DeleteConfirmDialog } from './DeleteConfirmDialog';
 export { MobileSidebar } from './MobileSidebar';
 export { SidebarToggle } from './SidebarToggle';
+export { CreateThreadModal } from './CreateThreadModal';

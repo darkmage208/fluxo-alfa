@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/auth';
 import type { ChatThread } from '@shared/types';
 import { chatApi } from '@/lib/api';
 import ThreadPasswordDialog from '@/components/ThreadPasswordDialog';
-import { Sidebar, ChatArea, DeleteConfirmDialog, MobileSidebar } from '@/components/chat';
+import { Sidebar, ChatArea, DeleteConfirmDialog, MobileSidebar, CreateThreadModal } from '@/components/chat';
 
 const ChatPage = () => {
   const [messageInput, setMessageInput] = useState('');
@@ -31,6 +31,7 @@ const ChatPage = () => {
   const [showThreadMenu, setShowThreadMenu] = useState<string | null>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isCreateThreadModalOpen, setIsCreateThreadModalOpen] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [previousScrollHeight, setPreviousScrollHeight] = useState(0);
   const { toast } = useToast();
@@ -62,9 +63,13 @@ const ChatPage = () => {
   const currentThreadCache = currentThread ? messageCache.get(currentThread.id) : null;
   const hasMoreMessages = currentThreadCache?.hasMore || false;
 
-  const handleCreateThread = async () => {
+  const handleCreateThread = async (title: string) => {
     try {
-      await createThread();
+      await createThread(title);
+      toast({
+        title: "Chat created",
+        description: `"${title}" has been created successfully`,
+      });
     } catch (error: any) {
       toast({
         title: "Failed to create thread",
@@ -74,13 +79,22 @@ const ChatPage = () => {
     }
   };
 
+  const handleOpenCreateThreadModal = () => {
+    setIsCreateThreadModalOpen(true);
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageInput.trim() || isStreaming) return;
 
-    let thread = currentThread;
-    if (!thread) {
-      thread = await createThread();
+    // Don't auto-create threads - user must create one first
+    if (!currentThread) {
+      toast({
+        title: "No active chat",
+        description: "Please create a new chat first to start a conversation",
+        variant: "destructive",
+      });
+      return;
     }
 
     const content = messageInput;
@@ -88,7 +102,7 @@ const ChatPage = () => {
 
     try {
       // Get password for current thread if it exists
-      const password = thread?.hasPassword ? threadPasswords.get(thread.id) : undefined;
+      const password = currentThread?.hasPassword ? threadPasswords.get(currentThread.id) : undefined;
       await sendMessage(content, password);
     } catch (error: any) {
       if (error.message.includes('Daily chat limit')) {
@@ -107,11 +121,11 @@ const ChatPage = () => {
         });
       } else if (error.message.includes('Thread is password protected') || error.message.includes('Invalid password')) {
         // Password issue - prompt for password immediately
-        if (thread) {
+        if (currentThread) {
           // Remove invalid password
           setThreadPasswords(prev => {
             const newMap = new Map(prev);
-            newMap.delete(thread.id);
+            newMap.delete(currentThread.id);
             return newMap;
           });
           
@@ -120,8 +134,8 @@ const ChatPage = () => {
           
           // Immediately show password dialog with warning
           openPasswordDialog(
-            thread.id,
-            thread.title || 'New Chat',
+            currentThread.id,
+            currentThread.title || 'New Chat',
             'verify',
             true
           );
@@ -397,7 +411,7 @@ const ChatPage = () => {
         currentThread={currentThread}
         isLoading={isLoading}
         user={user}
-        onCreateThread={handleCreateThread}
+        onCreateThread={handleOpenCreateThreadModal}
         onThreadClick={handleThreadClick}
         onEditThread={handleEditThread}
         onLogout={handleLogout}
@@ -418,7 +432,7 @@ const ChatPage = () => {
         currentThread={currentThread}
         isLoading={isLoading}
         user={user}
-        onCreateThread={handleCreateThread}
+        onCreateThread={handleOpenCreateThreadModal}
         onThreadClick={handleThreadClick}
         onEditThread={handleEditThread}
         onDeleteThread={handleDeleteThread}
@@ -445,7 +459,7 @@ const ChatPage = () => {
         messageInput={messageInput}
         setMessageInput={setMessageInput}
         onSendMessage={handleSendMessage}
-        onCreateThread={handleCreateThread}
+        onCreateThread={handleOpenCreateThreadModal}
         isLoading={isLoading}
         setIsMobileSidebarOpen={setIsMobileSidebarOpen}
         hasMoreMessages={hasMoreMessages}
@@ -474,6 +488,14 @@ const ChatPage = () => {
         mode={passwordDialog.mode}
         threadTitle={passwordDialog.threadTitle}
         hasPassword={passwordDialog.hasPassword}
+      />
+
+      {/* Create Thread Modal */}
+      <CreateThreadModal
+        isOpen={isCreateThreadModalOpen}
+        onClose={() => setIsCreateThreadModalOpen(false)}
+        onCreateThread={handleCreateThread}
+        isLoading={isLoading}
       />
     </div>
   );
