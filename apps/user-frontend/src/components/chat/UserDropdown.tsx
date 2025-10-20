@@ -53,7 +53,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
                   onClick={() => setShowUserDropdown(false)}
                 >
                   <CreditCard className="w-4 h-4 mr-3" />
-                  Billing & Subscription
+                  Cobrança e Assinatura
                 </Link>
                 
                 <div className="h-px bg-border/50 mx-2 my-1"></div>
@@ -65,7 +65,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
                   className="flex items-center w-full px-4 py-3 text-sm hover:bg-destructive/10 text-destructive transition-colors"
                 >
                   <LogOut className="w-4 h-4 mr-3" />
-                  Sign out
+                  Sair
                 </button>
               </div>
             </div>

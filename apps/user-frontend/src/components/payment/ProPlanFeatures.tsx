@@ -4,23 +4,23 @@ import { Crown, CheckCircle, MessageSquare, Zap, Shield, Users } from 'lucide-re
 const proFeatures = [
   {
     icon: MessageSquare,
-    title: "Unlimited Messages",
-    description: "Chat as much as you want, no daily limits"
+    title: "Mensagens Ilimitadas",
+    description: "Converse o quanto quiser, sem limites diários"
   },
   {
     icon: Zap,
-    title: "Priority Processing",
-    description: "Faster response times and priority queue"
+    title: "Processamento Prioritário",
+    description: "Tempos de resposta mais rápidos e fila prioritária"
   },
   {
     icon: Shield,
-    title: "Advanced Features",
-    description: "Access to latest AI models and capabilities"
+    title: "Recursos Avançados",
+    description: "Acesso aos modelos de IA mais recentes e capacidades"
   },
   {
     icon: Users,
-    title: "Premium Support",
-    description: "Dedicated customer support when you need it"
+    title: "Suporte Premium",
+    description: "Suporte ao cliente dedicado quando você precisar"
   }
 ];
 
@@ -30,13 +30,13 @@ export const ProPlanFeatures: React.FC = () => {
       <div className="text-center lg:text-left">
         <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold mb-6">
           <Crown className="w-4 h-4 mr-2" />
-          Pro Plan
+          Plano Pro
         </div>
         <h1 className="text-3xl lg:text-4xl font-bold mb-4 text-foreground">
-          Unlock Unlimited AI Conversations
+          Desbloqueie Conversas Ilimitadas com IA
         </h1>
         <p className="text-xl text-muted-foreground">
-          Get the full power of AI with unlimited messages and premium features
+          Obtenha todo o poder da IA com mensagens ilimitadas e recursos premium
         </p>
       </div>
 

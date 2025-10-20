@@ -24,12 +24,12 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({
         {isProcessing ? (
           <>
             <Loader2 className="mr-3 h-6 w-6 animate-spin" />
-            Setting up payment...
+            Configurando pagamento...
           </>
         ) : (
           <>
             <Crown className="mr-3 h-6 w-6" />
-            Purchase Pro - R$197/month
+            Comprar Pro - R$197/mês
           </>
         )}
       </Button>
@@ -37,11 +37,11 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({
       <div className="text-center space-y-3 pt-4">
         <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
           <Shield className="w-4 h-4" />
-          <span>Secure payment powered by industry leaders</span>
+          <span>Pagamento seguro fornecido por líderes da indústria</span>
         </div>
         <div className="text-xs text-muted-foreground max-w-md mx-auto">
-          By continuing, you agree to our Terms of Service and Privacy Policy. 
-          Your subscription will renew automatically unless cancelled.
+          Ao continuar, você concorda com nossos Termos de Serviço e Política de Privacidade. 
+          Sua assinatura será renovada automaticamente, a menos que cancelada.
         </div>
       </div>
     </div>

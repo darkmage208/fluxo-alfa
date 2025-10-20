@@ -32,10 +32,10 @@ const PaymentSuccessPage = () => {
               <CheckCircle className="w-12 h-12 text-primary" />
             </div>
             <CardTitle className="text-3xl font-bold text-foreground mb-4">
-              Payment Successful!
+              Pagamento Bem-sucedido!
             </CardTitle>
             <CardDescription className="text-lg text-muted-foreground">
-              Welcome to {planName} plan! Your subscription is now active and you have access to all premium features.
+              Bem-vindo ao plano {planName}! Sua assinatura está ativa e você tem acesso a todos os recursos premium.
             </CardDescription>
           </CardHeader>
           
@@ -44,12 +44,12 @@ const PaymentSuccessPage = () => {
             <div className="bg-accent rounded-xl p-6 border border-border">
               <div className="flex items-center justify-center space-x-3 mb-4">
                 <Crown className="w-6 h-6 text-primary" />
-                <span className="text-xl font-semibold text-foreground">{planName} Plan Activated</span>
+                <span className="text-xl font-semibold text-foreground">Plano {planName} Ativado</span>
               </div>
               <div className="text-sm text-muted-foreground space-y-2">
                 <div className="flex items-center justify-center space-x-2">
                   <MessageSquare className="w-4 h-4" />
-                  <span>Unlimited messages now available</span>
+                  <span>Mensagens ilimitadas agora disponíveis</span>
                 </div>
                 <div>Session ID: <code className="bg-muted px-2 py-1 rounded text-xs">{sessionId}</code></div>
               </div>
@@ -57,23 +57,23 @@ const PaymentSuccessPage = () => {
 
             {/* What's Next */}
             <div className="text-left">
-              <h3 className="text-lg font-semibold mb-4 text-center text-foreground">What's next?</h3>
+              <h3 className="text-lg font-semibold mb-4 text-center text-foreground">O que vem a seguir?</h3>
               <ul className="space-y-3">
                 <li className="flex items-start space-x-3">
                   <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground">Start unlimited conversations with our AI</span>
+                  <span className="text-muted-foreground">Comece conversas ilimitadas com nossa IA</span>
                 </li>
                 <li className="flex items-start space-x-3">
                   <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground">Access advanced AI models and features</span>
+                  <span className="text-muted-foreground">Acesse modelos de IA avançados e recursos</span>
                 </li>
                 <li className="flex items-start space-x-3">
                   <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground">Enjoy priority processing and support</span>
+                  <span className="text-muted-foreground">Desfrute de processamento prioritário e suporte</span>
                 </li>
                 <li className="flex items-start space-x-3">
                   <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground">Manage your subscription in the billing page</span>
+                  <span className="text-muted-foreground">Gerencie sua assinatura na página de cobrança</span>
                 </li>
               </ul>
             </div>
@@ -82,7 +82,7 @@ const PaymentSuccessPage = () => {
             <div className="space-y-4 pt-6">
               <Link to="/chat" className="block">
                 <Button size="lg" className="w-full text-lg py-6">
-                  Start Chatting Now
+                  Começar a Conversar Agora
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
@@ -90,12 +90,12 @@ const PaymentSuccessPage = () => {
               <div className="flex space-x-4">
                 <Link to="/billing" className="flex-1">
                   <Button variant="outline" className="w-full">
-                    View Billing
+                    Ver Cobrança
                   </Button>
                 </Link>
                 <Link to="/" className="flex-1">
                   <Button variant="ghost" className="w-full">
-                    Back to Home
+                    Voltar ao Início
                   </Button>
                 </Link>
               </div>

@@ -5,20 +5,20 @@ import { Star } from 'lucide-react';
 const testimonials = [
   {
     name: "Sarah Johnson",
-    role: "Product Manager",
-    content: "Fluxo Alfa has revolutionized how our team collaborates. The AI responses are incredibly helpful and accurate.",
+    role: "Gerente de Produto",
+    content: "O Fluxo Alfa revolucionou como nossa equipe colabora. As respostas de IA são incrivelmente úteis e precisas.",
     rating: 5
   },
   {
     name: "Michael Chen",
-    role: "Developer",
-    content: "The integration capabilities are fantastic. It's become an essential tool in our development workflow.",
+    role: "Desenvolvedor",
+    content: "As capacidades de integração são fantásticas. Tornou-se uma ferramenta essencial em nosso fluxo de trabalho de desenvolvimento.",
     rating: 5
   },
   {
     name: "Emily Rodriguez",
-    role: "Marketing Director",
-    content: "The unlimited messaging in the Pro plan has been a game-changer for our content creation process.",
+    role: "Diretora de Marketing",
+    content: "As mensagens ilimitadas no plano Pro foram um divisor de águas para nosso processo de criação de conteúdo.",
     rating: 5
   }
 ];
@@ -28,9 +28,9 @@ export const TestimonialsSection: React.FC = () => {
     <section className="py-20 px-4 bg-background">
       <div className="container max-w-6xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">What Our Users Say</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">O que Nossos Usuários Dizem</h2>
           <p className="text-xl text-muted-foreground">
-            Join thousands of satisfied users worldwide
+            Junte-se a milhares de usuários satisfeitos em todo o mundo
           </p>
         </div>
         <div className="grid md:grid-cols-3 gap-8">

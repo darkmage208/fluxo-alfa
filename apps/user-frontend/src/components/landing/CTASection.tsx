@@ -8,21 +8,21 @@ export const CTASection: React.FC = () => {
     <section className="py-20 px-4 bg-accent text-accent-foreground">
       <div className="container max-w-4xl mx-auto text-center">
         <h2 className="text-3xl md:text-4xl font-bold mb-6">
-          Ready to Transform Your Conversations?
+          Pronto para Transformar Suas Conversas?
         </h2>
         <p className="text-xl mb-8 text-accent-foreground/80">
-          Join thousands of users who have already discovered the power of AI-driven communication
+          Junte-se a milhares de usuários que já descobriram o poder da comunicação baseada em IA
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link to="/register">
             <Button size="lg" variant="secondary" className="w-full sm:w-auto text-lg px-8 py-6">
-              Start Your Free Trial
+              Iniciar Teste Gratuito
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
           <Link to="/login">
             <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-8 py-6">
-              Sign In
+              Entrar
             </Button>
           </Link>
         </div>

@@ -50,7 +50,7 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
               <Plus className="w-5 h-5 text-primary" />
             </div>
-            <h2 className="text-lg font-semibold text-foreground">Create New Chat</h2>
+            <h2 className="text-lg font-semibold text-foreground">Criar Nova Conversa</h2>
           </div>
           <Button
             variant="ghost"
@@ -63,13 +63,13 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
         </div>
         
         <p className="text-muted-foreground mb-6 leading-relaxed">
-          Give your new conversation a name to help you find it later.
+          Dê um nome à sua nova conversa para encontrá-la mais tarde.
         </p>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="thread-title" className="text-sm font-medium text-foreground">
-              Chat Name
+              Nome da Conversa
             </label>
             <Input
               id="thread-title"
@@ -82,7 +82,7 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
               maxLength={100}
             />
             <p className="text-xs text-muted-foreground">
-              {threadTitle.length}/100 characters
+              {threadTitle.length}/100 caracteres
             </p>
           </div>
           
@@ -94,7 +94,7 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
               disabled={isLoading}
               className="px-6"
             >
-              Cancel
+              Cancelar
             </Button>
             <Button
               type="submit"
@@ -104,12 +104,12 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
+                  Criando...
                 </>
               ) : (
                 <>
                   <Plus className="w-4 h-4 mr-2" />
-                  Create Chat
+                  Criar Conversa
                 </>
               )}
             </Button>

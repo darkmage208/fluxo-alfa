@@ -199,10 +199,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               <Bot className="w-10 h-10 text-primary-foreground" />
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-3">
-              New Chat Started
+              Nova Conversa Iniciada
             </h2>
             <p className="text-muted-foreground mb-8 leading-relaxed">
-              Welcome to your new conversation! Your intelligent AI assistant is ready to help. Ask anything to get started.
+              Bem-vindo à sua nova conversa! Seu assistente de IA inteligente está pronto para ajudar. Pergunte qualquer coisa para começar.
             </p>
             <Button
               onClick={onCreateThread}
@@ -215,7 +215,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               ) : (
                 <Plus className="w-5 h-5 mr-2" />
               )}
-              Start New Chat
+              Iniciar Nova Conversa
             </Button>
           </div>
         </div>

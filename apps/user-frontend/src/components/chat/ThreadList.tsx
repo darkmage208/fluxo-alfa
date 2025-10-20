@@ -100,7 +100,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                 ) : (
                   <>
                     <p className="text-sm font-medium text-foreground truncate">
-                      {thread.title || 'New Chat'}
+                      {thread.title || 'Nova Conversa'}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {formatDate(thread.createdAt)}
@@ -123,7 +123,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                       e.stopPropagation();
                       setShowThreadMenu(showThreadMenu === thread.id ? null : thread.id);
                     }}
-                    title="Thread options"
+                    title="Opções da conversa"
                   >
                     <MoreVertical className="w-4 h-4 text-muted-foreground" />
                   </Button>
@@ -146,7 +146,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                             className="flex items-center w-full px-3 py-2 text-sm hover:bg-accent/50 text-popover-foreground transition-colors"
                           >
                             <Edit3 className="w-4 h-4 mr-2" />
-                            Rename
+                            Renomear
                           </button>
                           
                           {thread.hasPassword ? (
@@ -157,7 +157,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                                   setShowThreadMenu(null);
                                   onOpenPasswordDialog(
                                     thread.id, 
-                                    thread.title || 'New Chat', 
+                                    thread.title || 'Nova Conversa', 
                                     'update', 
                                     true
                                   );
@@ -165,7 +165,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                                 className="flex items-center w-full px-3 py-2 text-sm hover:bg-accent/50 text-popover-foreground transition-colors"
                               >
                                 <Lock className="w-4 h-4 mr-2" />
-                                Change Password
+                                Alterar Senha
                               </button>
                               <button
                                 onClick={(e) => {
@@ -173,7 +173,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                                   setShowThreadMenu(null);
                                   onOpenPasswordDialog(
                                     thread.id, 
-                                    thread.title || 'New Chat', 
+                                    thread.title || 'Nova Conversa', 
                                     'delete', 
                                     true
                                   );
@@ -181,7 +181,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                                 className="flex items-center w-full px-3 py-2 text-sm hover:bg-accent/50 text-popover-foreground transition-colors"
                               >
                                 <Trash2 className="w-4 h-4 mr-2" />
-                                Remove Protection
+                                Remover Proteção
                               </button>
                             </>
                           ) : (
@@ -191,7 +191,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                                 setShowThreadMenu(null);
                                 onOpenPasswordDialog(
                                   thread.id, 
-                                  thread.title || 'New Chat', 
+                                  thread.title || 'Nova Conversa', 
                                   'set', 
                                   false
                                 );
@@ -199,7 +199,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                               className="flex items-center w-full px-3 py-2 text-sm hover:bg-accent text-popover-foreground transition-colors"
                             >
                               <Shield className="w-4 h-4 mr-2" />
-                              Add Protection
+                              Adicionar Proteção
                             </button>
                           )}
                           
@@ -213,7 +213,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                             className="flex items-center w-full px-3 py-2 text-sm hover:bg-destructive/10 text-destructive transition-colors"
                           >
                             <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
+                            Excluir
                           </button>
                         </div>
                       </div>

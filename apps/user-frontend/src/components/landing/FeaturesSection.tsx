@@ -5,23 +5,23 @@ import { MessageSquare, Zap, Shield, Users } from 'lucide-react';
 const features = [
   {
     icon: MessageSquare,
-    title: "AI-Powered Conversations",
-    description: "Engage in natural, intelligent conversations with advanced AI technology"
+    title: "Conversas com IA",
+    description: "Participe de conversas naturais e inteligentes com tecnologia de IA avançada"
   },
   {
     icon: Zap,
-    title: "Lightning Fast Responses",
-    description: "Get instant responses to your questions with optimized performance"
+    title: "Respostas Instantâneas",
+    description: "Obtenha respostas instantâneas às suas perguntas com performance otimizada"
   },
   {
     icon: Shield,
-    title: "Secure & Private",
-    description: "Your conversations are encrypted and protected with enterprise-grade security"
+    title: "Seguro e Privado",
+    description: "Suas conversas são criptografadas e protegidas com segurança de nível empresarial"
   },
   {
     icon: Users,
-    title: "Multi-User Support",
-    description: "Collaborate with your team and share conversations seamlessly"
+    title: "Suporte Multi-Usuário",
+    description: "Colabore com sua equipe e compartilhe conversas perfeitamente"
   }
 ];
 
@@ -30,9 +30,9 @@ export const FeaturesSection: React.FC = () => {
     <section className="py-20 px-4 bg-background">
       <div className="container max-w-6xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose Fluxo Alfa?</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Por que Escolher o Fluxo Alfa?</h2>
           <p className="text-xl text-muted-foreground">
-            Discover the features that make our AI platform stand out
+            Descubra os recursos que fazem nossa plataforma de IA se destacar
           </p>
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">

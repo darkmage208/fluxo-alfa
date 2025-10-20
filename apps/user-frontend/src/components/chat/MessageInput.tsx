@@ -59,7 +59,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             autoResizeTextarea();
           }}
           onKeyDown={handleTextareaKeyDown}
-          placeholder="Type your message..."
+          placeholder="Digite sua mensagem..."
           disabled={isStreaming}
           className="w-full p-3 sm:p-4 pr-12 sm:pr-14 bg-transparent resize-none focus:outline-none placeholder:text-muted-foreground text-foreground disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl text-sm sm:text-base"
           style={{ minHeight: '40px', maxHeight: '150px' }}

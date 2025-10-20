@@ -12,10 +12,10 @@ export const Header: React.FC = () => {
         </div>
         <div className="flex items-center space-x-4">
           <Link to="/login">
-            <Button variant="ghost">Sign In</Button>
+            <Button variant="ghost">Entrar</Button>
           </Link>
           <Link to="/register">
-            <Button>Get Started</Button>
+            <Button>Começar</Button>
           </Link>
         </div>
       </div>

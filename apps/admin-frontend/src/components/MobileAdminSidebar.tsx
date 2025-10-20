@@ -26,10 +26,10 @@ export const MobileAdminSidebar: React.FC<MobileAdminSidebarProps> = ({
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { name: 'Users', href: '/users', icon: Users },
-    { name: 'Subscriptions', href: '/subscriptions', icon: CreditCard },
-    { name: 'RAG Sources', href: '/sources', icon: Database },
-    { name: 'Token Usage', href: '/usage', icon: Zap },
+    { name: 'Usuários', href: '/users', icon: Users },
+    { name: 'Assinaturas', href: '/subscriptions', icon: CreditCard },
+    { name: 'Fontes RAG', href: '/sources', icon: Database },
+    { name: 'Uso de Tokens', href: '/usage', icon: Zap },
   ];
 
   const handleLogout = async () => {
@@ -107,7 +107,7 @@ export const MobileAdminSidebar: React.FC<MobileAdminSidebarProps> = ({
             onClick={handleLogout}
           >
             <LogOut className="w-4 h-4 mr-3" />
-            Sign out
+            Sair
           </Button>
         </div>
       </div>

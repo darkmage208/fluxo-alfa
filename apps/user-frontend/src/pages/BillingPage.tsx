@@ -39,8 +39,8 @@ const BillingPage = () => {
       window.location.href = url;
     } catch (error: any) {
       toast({
-        title: "Failed to open billing portal",
-        description: error.response?.data?.error || "Something went wrong",
+        title: "Falha ao abrir portal de cobrança",
+        description: error.response?.data?.error || "Algo deu errado",
         variant: "destructive",
       });
     }
@@ -51,13 +51,13 @@ const BillingPage = () => {
       await billingApi.cancelSubscription();
       await loadSubscription();
       toast({
-        title: "Subscription canceled",
-        description: "Your subscription will be canceled at the end of the current period.",
+        title: "Assinatura cancelada",
+        description: "Sua assinatura será cancelada no final do período atual.",
       });
     } catch (error: any) {
       toast({
-        title: "Failed to cancel subscription",
-        description: error.response?.data?.error || "Something went wrong",
+        title: "Falha ao cancelar assinatura",
+        description: error.response?.data?.error || "Algo deu errado",
         variant: "destructive",
       });
     }
@@ -82,11 +82,11 @@ const BillingPage = () => {
           <Link to="/chat">
             <Button variant="ghost" className="mb-4">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Chat
+              Voltar ao Chat
             </Button>
           </Link>
-          <h1 className="text-3xl font-bold text-foreground">Billing & Subscription</h1>
-          <p className="text-muted-foreground mt-2">Manage your Fluxo Alfa subscription</p>
+          <h1 className="text-3xl font-bold text-foreground">Cobrança e Assinatura</h1>
+          <p className="text-muted-foreground mt-2">Gerencie sua assinatura do Fluxo Alfa</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">

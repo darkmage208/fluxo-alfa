@@ -11,10 +11,10 @@ export const Footer: React.FC = () => {
             <img src="/fluxoalfa.png" alt="Fluxo Alfa" className="h-6 w-auto" />
           </div>
           <p className="text-muted-foreground mb-6">
-            Empowering conversations through intelligent AI technology
+            Capacitando conversas através de tecnologia de IA inteligente
           </p>
           <div className="text-sm text-muted-foreground">
-            © 2025 Fluxo Alfa. All rights reserved.
+            © 2025 Fluxo Alfa. Todos os direitos reservados.
           </div>
         </div>
       </div>

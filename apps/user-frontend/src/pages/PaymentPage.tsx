@@ -30,8 +30,8 @@ const PaymentPage = () => {
       } catch (error) {
         console.error('Failed to load payment gateways:', error);
         toast({
-          title: "Error loading payment methods",
-          description: "Please refresh the page to try again",
+          title: "Erro ao carregar métodos de pagamento",
+          description: "Por favor, atualize a página para tentar novamente",
           variant: "destructive",
         });
       } finally {
@@ -46,8 +46,8 @@ const PaymentPage = () => {
   const handlePayment = async () => {
     if (!selectedGateway) {
       toast({
-        title: "Please select a payment method",
-        description: "Choose your preferred payment gateway to continue",
+        title: "Por favor, selecione um método de pagamento",
+        description: "Escolha seu gateway de pagamento preferido para continuar",
         variant: "destructive",
       });
       return;
@@ -72,8 +72,8 @@ const PaymentPage = () => {
       const selectedGatewayInfo = gateways.find((g: any) => g.id === selectedGateway);
 
       toast({
-        title: "Redirecting to payment...",
-        description: `Setting up your ${selectedGatewayInfo?.name} payment`,
+        title: "Redirecionando para pagamento...",
+        description: `Configurando seu pagamento ${selectedGatewayInfo?.name}`,
       });
 
       const response = await billingApi.createCheckoutSession(checkoutData);
@@ -90,8 +90,8 @@ const PaymentPage = () => {
     } catch (error: any) {
       console.error('Payment initiation error:', error);
       toast({
-        title: "Payment setup failed",
-        description: error.response?.data?.error || "Unable to connect to payment gateway. Please try again.",
+        title: "Falha na configuração do pagamento",
+        description: error.response?.data?.error || "Não foi possível conectar ao gateway de pagamento. Tente novamente.",
         variant: "destructive",
       });
       setIsProcessing(false);
@@ -106,7 +106,7 @@ const PaymentPage = () => {
           <Link to="/chat">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Chat
+              Voltar ao Chat
             </Button>
           </Link>
         </div>
@@ -117,15 +117,15 @@ const PaymentPage = () => {
             <img src="/logo.png" alt="Fluxo Alfa Logo" className="w-8 h-8" />
             <img src="/fluxoalfa.png" alt="Fluxo Alfa" className="h-7 w-auto" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">Upgrade to Pro</h1>
-          <p className="text-muted-foreground">User: {user?.email}</p>
+          <h1 className="text-3xl font-bold text-foreground">Fazer Upgrade para Pro</h1>
+          <p className="text-muted-foreground">Usuário: {user?.email}</p>
         </div>
 
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading payment methods...</p>
+              <p className="text-muted-foreground">Carregando métodos de pagamento...</p>
             </div>
           </div>
         ) : (

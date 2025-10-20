@@ -67,13 +67,13 @@ const ChatPage = () => {
     try {
       await createThread(title);
       toast({
-        title: "Chat created",
-        description: `"${title}" has been created successfully`,
+        title: "Conversa criada",
+        description: `"${title}" foi criada com sucesso`,
       });
     } catch (error: any) {
       toast({
-        title: "Failed to create thread",
-        description: error.response?.data?.error || "Something went wrong",
+        title: "Falha ao criar conversa",
+        description: error.response?.data?.error || "Algo deu errado",
         variant: "destructive",
       });
     }
@@ -90,8 +90,8 @@ const ChatPage = () => {
     // Don't auto-create threads - user must create one first
     if (!currentThread) {
       toast({
-        title: "No active chat",
-        description: "Please create a new chat first to start a conversation",
+        title: "Nenhuma conversa ativa",
+        description: "Por favor, crie uma nova conversa primeiro para começar",
         variant: "destructive",
       });
       return;
@@ -107,14 +107,14 @@ const ChatPage = () => {
     } catch (error: any) {
       if (error.message.includes('Daily chat limit')) {
         toast({
-          title: "Daily limit reached",
-          description: "You've reached your daily message limit. Upgrade to Pro for unlimited conversations!",
+          title: "Limite diário atingido",
+          description: "Você atingiu seu limite diário de mensagens. Faça upgrade para Pro para conversas ilimitadas!",
           variant: "destructive",
           duration: 10000,
           action: (
             <Link to="/billing">
               <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                View Billing
+                Ver Cobrança
               </Button>
             </Link>
           ),
@@ -135,22 +135,22 @@ const ChatPage = () => {
           // Immediately show password dialog with warning
           openPasswordDialog(
             currentThread.id,
-            currentThread.title || 'New Chat',
+            currentThread.title || 'Nova Conversa',
             'verify',
             true
           );
           
           toast({
-            title: "Authentication required",
-            description: "Invalid or missing password. Please authenticate to send messages.",
+            title: "Autenticação necessária",
+            description: "Senha inválida ou ausente. Por favor, autentique-se para enviar mensagens.",
             variant: "destructive",
             duration: 5000,
           });
         }
       } else {
         toast({
-          title: "Failed to send message",
-          description: error.message || "Something went wrong",
+          title: "Falha ao enviar mensagem",
+          description: error.message || "Algo deu errado",
           variant: "destructive",
         });
       }
@@ -163,7 +163,7 @@ const ChatPage = () => {
 
   const handleEditThread = (threadId: string, currentTitle: string) => {
     setEditingThreadId(threadId);
-    setEditTitle(currentTitle || 'New Chat');
+    setEditTitle(currentTitle || 'Nova Conversa');
   };
 
   const handleSaveTitle = async (threadId: string) => {
@@ -172,13 +172,13 @@ const ChatPage = () => {
         await renameThread(threadId, editTitle.trim());
         setEditingThreadId(null);
         toast({
-          title: "Thread renamed",
-          description: "Your conversation title has been updated.",
+          title: "Conversa renomeada",
+          description: "O título da sua conversa foi atualizado.",
         });
       } catch (error: any) {
         toast({
-          title: "Failed to rename thread",
-          description: error.response?.data?.error || "Something went wrong",
+          title: "Falha ao renomear conversa",
+          description: error.response?.data?.error || "Algo deu errado",
           variant: "destructive",
         });
       }
@@ -201,13 +201,13 @@ const ChatPage = () => {
         return newMap;
       });
       toast({
-        title: "Thread deleted",
-        description: "The conversation have been removed.",
+        title: "Conversa excluída",
+        description: "A conversa foi removida.",
       });
     } catch (error: any) {
       toast({
-        title: "Failed to delete thread",
-        description: error.response?.data?.error || "Something went wrong",
+        title: "Falha ao excluir conversa",
+        description: error.response?.data?.error || "Algo deu errado",
         variant: "destructive",
       });
     }
@@ -221,7 +221,7 @@ const ChatPage = () => {
       
       // Check if password verification failed
       if (!result.data?.isValid) {
-        throw new Error('Invalid password');
+        throw new Error('Senha inválida');
       }
       
       // Store password for this session
@@ -234,19 +234,19 @@ const ChatPage = () => {
       }
       
       toast({
-        title: "Access granted",
-        description: "Thread unlocked successfully.",
+        title: "Acesso concedido",
+        description: "Conversa desbloqueada com sucesso.",
       });
       
       // Close the dialog on success
       closePasswordDialog();
     } catch (error: any) {
       // Don't close the dialog, just show the error
-      const errorMessage = error.response?.data?.error || error.message || "Invalid password";
+      const errorMessage = error.response?.data?.error || error.message || "Senha inválida";
       
       // Show error notification
       toast({
-        title: "Authentication failed", 
+        title: "Falha na autenticação", 
         description: errorMessage,
         variant: "destructive",
         duration: 3000,
@@ -269,8 +269,8 @@ const ChatPage = () => {
       await loadThreads();
       
       toast({
-        title: "Password set",
-        description: "Thread is now password protected.",
+        title: "Senha definida",
+        description: "A conversa agora está protegida por senha.",
       });
       
       // Close the dialog on success
@@ -295,8 +295,8 @@ const ChatPage = () => {
       }
       
       toast({
-        title: "Password updated",
-        description: "Thread password has been changed.",
+        title: "Senha atualizada",
+        description: "A senha da conversa foi alterada.",
       });
       
       // Close the dialog on success
@@ -328,8 +328,8 @@ const ChatPage = () => {
       await loadThreads();
       
       toast({
-        title: "Password removed",
-        description: "Thread is no longer password protected.",
+        title: "Senha removida",
+        description: "A conversa não está mais protegida por senha.",
       });
       
       // Close the dialog on success
@@ -387,14 +387,14 @@ const ChatPage = () => {
         
         openPasswordDialog(
           thread.id,
-          thread.title || 'New Chat',
+          thread.title || 'Nova Conversa',
           'verify',
           true
         );
       } else {
         toast({
-          title: "Failed to load thread",
-          description: error.response?.data?.error || "Something went wrong",
+          title: "Falha ao carregar conversa",
+          description: error.response?.data?.error || "Algo deu errado",
           variant: "destructive",
         });
       }

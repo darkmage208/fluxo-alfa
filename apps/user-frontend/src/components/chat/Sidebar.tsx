@@ -87,7 +87,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={isCollapsed && onToggleCollapse ? onToggleCollapse : undefined}
             onMouseEnter={() => setIsLogoHovered(true)}
             onMouseLeave={() => setIsLogoHovered(false)}
-            title={isCollapsed ? 'Expand sidebar' : undefined}
+            title={isCollapsed ? 'Expandir barra lateral' : undefined}
           >
             <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 shadow-sm">
               {isCollapsed && isLogoHovered ? (
@@ -112,10 +112,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className={`${isCollapsed ? "w-8 h-8 p-0 mx-auto" : "w-full"} border-border/50 hover:bg-accent hover:text-accent-foreground transition-all duration-200`}
           onClick={onCreateThread}
           disabled={isLoading}
-          title={isCollapsed ? 'New Chat' : undefined}
+          title={isCollapsed ? 'Nova Conversa' : undefined}
         >
           <Plus className={`w-4 h-4 ${!isCollapsed ? 'mr-2' : ''}`} />
-          {!isCollapsed && 'New Chat'}
+          {!isCollapsed && 'Nova Conversa'}
         </Button>
       </div>
 
@@ -162,7 +162,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               size="sm"
               onClick={() => setShowUserDropdown(!showUserDropdown)}
               className="w-8 h-8 p-0 mx-auto relative hover:bg-accent/50 transition-all duration-200"
-              title="User menu"
+              title="Menu do usuário"
             >
               <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-sm">
                 <User className="w-3 h-3 text-primary-foreground" />
@@ -182,7 +182,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       onClick={() => setShowUserDropdown(false)}
                     >
                       <CreditCard className="w-4 h-4 mr-3" />
-                      Billing & Subscription
+                      Cobrança e Assinatura
                     </Link>
                     <div className="h-px bg-border/50 mx-2 my-1"></div>
                     <button
@@ -193,7 +193,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       className="flex items-center w-full px-4 py-3 text-sm hover:bg-destructive/10 text-destructive transition-colors"
                     >
                       <LogOut className="w-4 h-4 mr-3" />
-                      Sign out
+                      Sair
                     </button>
                   </div>
                 </div>

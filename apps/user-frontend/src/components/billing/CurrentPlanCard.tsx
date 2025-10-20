@@ -25,18 +25,18 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center">
           <CreditCard className="w-5 h-5 mr-2" />
-          Current Plan
+          Plano Atual
         </CardTitle>
-        <CardDescription>Your active subscription details</CardDescription>
+        <CardDescription>Detalhes da sua assinatura ativa</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <span className="font-medium">Plan:</span>
+            <span className="font-medium">Plano:</span>
             <div className="flex items-center">
               {isPro && <Crown className="w-4 h-4 mr-1 text-yellow-500" />}
               <span className={`font-semibold ${isPro ? 'text-yellow-600' : 'text-gray-600'}`}>
-                {subscription?.plan?.id === 'pro' ? 'Pro' : 'Free'}
+                {subscription?.plan?.id === 'pro' ? 'Pro' : 'Gratuito'}
               </span>
             </div>
           </div>
@@ -47,21 +47,21 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
               subscription?.status === 'active' ? 'text-green-600' : 
               isCanceled ? 'text-red-600' : 'text-yellow-600'
             }`}>
-              {subscription?.status === 'active' ? 'Active' :
-               isCanceled ? 'Canceled' : subscription?.status || 'Free'}
+              {subscription?.status === 'active' ? 'Ativo' :
+               isCanceled ? 'Cancelado' : subscription?.status || 'Gratuito'}
             </span>
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="font-medium">Daily Chat Limit:</span>
+            <span className="font-medium">Limite Diário de Chats:</span>
             <span className="font-semibold">
-              {subscription?.plan?.dailyChatLimit || 'Unlimited'}
+              {subscription?.plan?.dailyChatLimit || 'Ilimitado'}
             </span>
           </div>
 
           {subscription?.paymentMethod && isPro && (
             <div className="flex items-center justify-between">
-              <span className="font-medium">Payment Method:</span>
+              <span className="font-medium">Método de Pagamento:</span>
               <span className="font-semibold capitalize">
                 {subscription.paymentMethod.replace('_', ' ')}
               </span>
@@ -71,7 +71,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
           {subscription?.currentPeriodEnd && (
             <div className="flex items-center justify-between">
               <span className="font-medium">
-                {isCanceled ? 'Ends on:' : 'Renews on:'}
+                {isCanceled ? 'Termina em:' : 'Renova em:'}
               </span>
               <span className="font-semibold">
                 {formatDate(subscription.currentPeriodEnd)}
@@ -86,7 +86,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
                   onClick={onManageBilling}
                   className="w-full"
                 >
-                  Manage Billing
+                  Gerenciar Cobrança
                 </Button>
                 {!isCanceled && (
                   <Button
@@ -94,7 +94,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
                     onClick={onCancelSubscription}
                     className="w-full"
                   >
-                    Cancel Subscription
+                    Cancelar Assinatura
                   </Button>
                 )}
               </div>
@@ -102,7 +102,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
               <Link to="/payment">
                 <Button className="w-full">
                   <Crown className="w-4 h-4 mr-2" />
-                  Upgrade to Pro
+                  Fazer Upgrade para Pro
                 </Button>
               </Link>
             )}

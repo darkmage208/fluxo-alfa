@@ -73,7 +73,7 @@ const ThreadPasswordDialog: React.FC<ThreadPasswordDialogProps> = ({
       // Success! The parent component will handle closing the dialog
       // Don't call handleClose() here - let the parent control the dialog state
     } catch (err: any) {
-      const errorMessage = err.response?.data?.error || err.message || 'Operation failed';
+      const errorMessage = err.response?.data?.error || err.message || 'Operação falhou';
       setError(errorMessage);
       
       // Clear password fields on error for security and better UX
@@ -112,11 +112,11 @@ const ThreadPasswordDialog: React.FC<ThreadPasswordDialogProps> = ({
 
   const getTitle = () => {
     switch (mode) {
-      case 'verify': return 'Enter Thread Password';
-      case 'set': return 'Set Thread Password';
-      case 'update': return 'Update Thread Password';
-      case 'delete': return 'Remove Thread Password';
-      default: return 'Thread Password';
+      case 'verify': return 'Digite a Senha da Conversa';
+      case 'set': return 'Definir Senha da Conversa';
+      case 'update': return 'Atualizar Senha da Conversa';
+      case 'delete': return 'Remover Senha da Conversa';
+      default: return 'Senha da Conversa';
     }
   };
 
@@ -172,7 +172,7 @@ const ThreadPasswordDialog: React.FC<ThreadPasswordDialogProps> = ({
                     <X className="w-3 h-3 text-destructive-foreground" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-destructive">Authentication Failed</p>
+                    <p className="text-sm font-medium text-destructive">Falha na Autenticação</p>
                     <p className="text-sm text-muted-foreground mt-1">{error}</p>
                   </div>
                 </div>
@@ -181,14 +181,14 @@ const ThreadPasswordDialog: React.FC<ThreadPasswordDialogProps> = ({
 
             {mode === 'verify' && (
               <div className="space-y-3">
-                <label className="text-sm font-medium text-foreground">Password</label>
+                <label className="text-sm font-medium text-foreground">Senha</label>
                 <div className="relative">
                   <Input
                     ref={passwordInputRef}
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter thread password"
+                    placeholder="Digite a senha da conversa"
                     className="pr-10"
                     required
                   />
@@ -207,13 +207,13 @@ const ThreadPasswordDialog: React.FC<ThreadPasswordDialogProps> = ({
 
             {mode === 'set' && (
               <div className="space-y-3">
-                <label className="text-sm font-medium text-foreground">New Password</label>
+                <label className="text-sm font-medium text-foreground">Nova Senha</label>
                 <div className="relative">
                   <Input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter new password"
+                    placeholder="Digite a nova senha"
                     className="pr-10"
                     maxLength={100}
                     required
@@ -235,13 +235,13 @@ const ThreadPasswordDialog: React.FC<ThreadPasswordDialogProps> = ({
           {mode === 'update' && (
             <>
               <div className="space-y-3">
-                <label className="text-sm font-medium text-foreground">Current Password</label>
+                <label className="text-sm font-medium text-foreground">Senha Atual</label>
                 <div className="relative">
                   <Input
                     type={showCurrentPassword ? 'text' : 'password'}
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="Enter current password"
+                    placeholder="Digite a senha atual"
                     className="pr-10"
                     required
                   />
@@ -257,13 +257,13 @@ const ThreadPasswordDialog: React.FC<ThreadPasswordDialogProps> = ({
                 </div>
               </div>
               <div className="space-y-3">
-                <label className="text-sm font-medium text-foreground">New Password</label>
+                <label className="text-sm font-medium text-foreground">Nova Senha</label>
                 <div className="relative">
                   <Input
                     type={showNewPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter new password"
+                    placeholder="Digite a nova senha"
                     className="pr-10"
                     maxLength={100}
                     required
@@ -296,13 +296,13 @@ const ThreadPasswordDialog: React.FC<ThreadPasswordDialogProps> = ({
                 </div>
               </div>
               <div className="space-y-3">
-                <label className="text-sm font-medium text-foreground">Current Password</label>
+                <label className="text-sm font-medium text-foreground">Senha Atual</label>
                 <div className="relative">
                   <Input
                     type={showCurrentPassword ? 'text' : 'password'}
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="Enter current password to confirm"
+                    placeholder="Digite a senha atual para confirmar"
                     className="pr-10"
                     required
                   />
@@ -340,13 +340,13 @@ const ThreadPasswordDialog: React.FC<ThreadPasswordDialogProps> = ({
                 {isLoading ? (
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                    <span>Processing...</span>
+                    <span>Processando...</span>
                   </div>
                 ) : (
-                  mode === 'verify' ? 'Unlock' :
-                  mode === 'set' ? 'Set Password' :
-                  mode === 'update' ? 'Update Password' :
-                  mode === 'delete' ? 'Remove Password' : 'Submit'
+                  mode === 'verify' ? 'Desbloquear' :
+                  mode === 'set' ? 'Definir Senha' :
+                  mode === 'update' ? 'Atualizar Senha' :
+                  mode === 'delete' ? 'Remover Senha' : 'Enviar'
                 )}
               </Button>
             </div>

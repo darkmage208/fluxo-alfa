@@ -6,35 +6,35 @@ import { CheckCircle } from 'lucide-react';
 
 const plans = [
   {
-    name: "Free",
+    name: "Gratuito",
     price: "R$0",
-    period: "forever",
-    description: "Perfect for getting started",
+    period: "para sempre",
+    description: "Perfeito para começar",
     features: [
-      "5 messages per day",
-      "Basic AI responses",
-      "Standard support",
-      "Web access"
+      "5 mensagens por dia",
+      "Respostas básicas de IA",
+      "Suporte padrão",
+      "Acesso web"
     ],
     popular: false,
-    buttonText: "Get Started",
+    buttonText: "Começar",
     buttonLink: "/register"
   },
   {
     name: "Pro",
     price: "R$197",
-    period: "per month",
-    description: "Unlimited conversations and premium features",
+    period: "por mês",
+    description: "Conversas ilimitadas e recursos premium",
     features: [
-      "Unlimited messages",
-      "Priority processing",
-      "Advanced AI models",
-      "Premium support",
-      "API access",
-      "Custom integrations"
+      "Mensagens ilimitadas",
+      "Processamento prioritário",
+      "Modelos de IA avançados",
+      "Suporte premium",
+      "Acesso à API",
+      "Integrações personalizadas"
     ],
     popular: true,
-    buttonText: "Upgrade to Pro",
+    buttonText: "Fazer Upgrade para Pro",
     buttonLink: "/payment"
   }
 ];
@@ -44,9 +44,9 @@ export const PricingSection: React.FC = () => {
     <section className="py-12 sm:py-16 md:py-20 px-4 bg-background">
       <div className="container max-w-6xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">Choose Your Plan</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">Escolha Seu Plano</h2>
           <p className="text-xl text-muted-foreground">
-            Start free and upgrade when you need more power
+            Comece grátis e faça upgrade quando precisar de mais poder
           </p>
         </div>
         <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -54,7 +54,7 @@ export const PricingSection: React.FC = () => {
             <Card key={index} className={`relative flex flex-col h-full ${plan.popular ? 'border-2 border-primary shadow-xl' : ''}`}>
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground px-6 py-2 rounded-full text-sm font-semibold">
-                  Most Popular
+                  Mais Popular
                 </div>
               )}
               <CardHeader className="text-center">

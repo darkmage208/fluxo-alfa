@@ -95,7 +95,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
             disabled={isLoading}
           >
             <Plus className="w-4 h-4 mr-2" />
-            New Chat
+            Nova Conversa
           </Button>
         </div>
 
