@@ -17,11 +17,9 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
         }`}
       >
         <div
-          className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center shadow-sm ring-2 ring-offset-2 ring-offset-background ${
-            message.role === 'user'
-              ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white ring-blue-200 dark:ring-blue-800'
-              : 'bg-gradient-to-br from-purple-500 to-blue-500 text-white ring-purple-200 dark:ring-purple-800'
-          }`}
+          className={
+            'flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center shadow-sm ring-2 ring-offset-2 ring-offset-background bg-accent text-accent-foreground ring-border'
+          }
         >
           {message.role === 'user' ? (
             <User className="w-4 h-4" />
@@ -30,11 +28,7 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
           )}
         </div>
         <div
-          className={`rounded-2xl shadow-sm border backdrop-blur-sm flex-1 ${
-            message.role === 'user'
-              ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white border-blue-200/50 shadow-blue-200/25'
-              : 'bg-card/95 border-border shadow-md'
-          }`}
+          className={'rounded-2xl shadow-sm border backdrop-blur-sm flex-1 bg-card/95 text-foreground border-border shadow-md'}
         >
           <div className="px-4 py-3">
             {message.role === 'user' ? (
@@ -46,9 +40,7 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
               />
             )}
           </div>
-          <div className={`px-4 pb-2 text-xs font-medium ${
-            message.role === 'user' ? 'text-blue-100' : 'text-muted-foreground'
-          }`}>
+          <div className={'px-4 pb-2 text-xs font-medium text-muted-foreground'}>
             {formatDate(message.createdAt)}
           </div>
         </div>

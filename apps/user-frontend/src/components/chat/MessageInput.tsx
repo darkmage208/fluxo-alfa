@@ -71,7 +71,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       <Button
         type="submit"
         disabled={!messageInput.trim() || isStreaming}
-        className="h-12 w-12 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex-shrink-0"
+        variant="ghost"
+        className="h-12 w-12 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex-shrink-0 bg-background/20 backdrop-blur-md border border-border/30 hover:bg-background/30 hover:border-border/50"
         size="icon"
       >
         <Send className="w-4 h-4 sm:w-5 sm:h-5" />
