@@ -24,11 +24,15 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
           {message.role === 'user' ? (
             <User className="w-4 h-4" />
           ) : (
-            <Bot className="w-4 h-4" />
+            <img src="/logo.png" alt="Fluxo Alfa Logo" className="w-5 h-5" />
           )}
         </div>
         <div
-          className={'rounded-2xl shadow-sm border backdrop-blur-sm flex-1 bg-card/95 text-foreground border-border shadow-md'}
+          className={`rounded-2xl shadow-sm border backdrop-blur-sm flex-1 shadow-md ${
+            message.role === 'user' 
+              ? 'bg-white/10 backdrop-blur-md border-white/20 text-foreground' // Light glass effect for user
+              : 'bg-primary/10 backdrop-blur-md border-primary/20 text-foreground' // Transparent red glass for bot
+          }`}
         >
           <div className="px-4 py-3">
             {message.role === 'user' ? (

@@ -151,10 +151,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                         minWidth: '320px'
                       }}
                     >
-                      <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 text-white flex items-center justify-center shadow-sm ring-2 ring-purple-200 dark:ring-purple-800 ring-offset-2 ring-offset-background">
-                        <Bot className="w-4 h-4" />
+                      <div className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center shadow-sm ring-2 ring-offset-2 ring-offset-background bg-accent text-accent-foreground ring-border">
+                        <img src="/logo.png" alt="Fluxo Alfa Logo" className="w-5 h-5" />
                       </div>
-                      <div className="rounded-2xl shadow-md border border-border bg-card/95 backdrop-blur-sm flex-1">
+                      <div className="rounded-2xl shadow-md border border-primary/30 bg-primary/20 backdrop-blur-md flex-1">
                         {streamingMessage ? (
                           <div className="px-4 py-3">
                             <StreamingMarkdownRenderer 
