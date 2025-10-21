@@ -16,6 +16,7 @@ interface ChatState {
   messages: ChatMessage[];
   messageCache: Map<string, ThreadMessageCache>;
   isLoading: boolean;
+  isLoadingThreads: boolean;
   isLoadingMoreMessages: boolean;
   isStreaming: boolean;
   streamingMessage: string;
@@ -36,6 +37,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
   messageCache: new Map<string, ThreadMessageCache>(),
   isLoading: false,
+  isLoadingThreads: false,
   isLoadingMoreMessages: false,
   isStreaming: false,
   streamingMessage: '',
@@ -51,13 +53,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   loadThreads: async () => {
-    set({ isLoading: true });
+    set({ isLoadingThreads: true });
     try {
       const response = await chatApi.getThreads();
-      set({ threads: response.data, isLoading: false });
+      set({ threads: response.data, isLoadingThreads: false });
     } catch (error) {
       console.error('Failed to load threads:', error);
-      set({ isLoading: false });
+      set({ isLoadingThreads: false });
     }
   },
 

@@ -43,6 +43,7 @@ const ChatPage = () => {
     messages,
     messageCache,
     isLoading,
+    isLoadingThreads,
     isLoadingMoreMessages,
     isStreaming,
     streamingMessage,
@@ -409,7 +410,7 @@ const ChatPage = () => {
         onClose={() => setIsMobileSidebarOpen(false)}
         threads={threads}
         currentThread={currentThread}
-        isLoading={isLoading}
+        isLoading={isLoadingThreads}
         user={user}
         onCreateThread={handleOpenCreateThreadModal}
         onThreadClick={handleThreadClick}
@@ -430,7 +431,7 @@ const ChatPage = () => {
       <Sidebar
         threads={threads}
         currentThread={currentThread}
-        isLoading={isLoading}
+        isLoading={isLoadingThreads}
         user={user}
         onCreateThread={handleOpenCreateThreadModal}
         onThreadClick={handleThreadClick}
