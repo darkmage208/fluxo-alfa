@@ -20,7 +20,7 @@ upstream admin {
 # Redirect HTTP to HTTPS
 server {
     listen 80;
-    server_name fluxoalfa.com.br www.fluxoalfa.com.br admin.fluxoalfa.com.br api.fluxoalfa.com.br;
+    server_name app.fluxoalfa.com.br admin.fluxoalfa.com.br api.fluxoalfa.com.br;
 
     # Let's Encrypt challenge
     location /.well-known/acme-challenge/ {
@@ -33,15 +33,15 @@ server {
     }
 }
 
-# Main website - fluxoalfa.com.br
+# Main website - app.fluxoalfa.com.br
 server {
     listen 443 ssl;
     http2 on;
-    server_name fluxoalfa.com.br;
+    server_name app.fluxoalfa.com.br;
 
     # SSL Configuration
-    ssl_certificate /etc/letsencrypt/live/fluxoalfa.com.br/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/fluxoalfa.com.br/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/app.fluxoalfa.com.br/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/app.fluxoalfa.com.br/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384;
     ssl_prefer_server_ciphers off;
@@ -81,21 +81,6 @@ server {
     }
 }
 
-# WWW redirect
-server {
-    listen 443 ssl;
-    http2 on;
-    server_name www.fluxoalfa.com.br;
-
-    # SSL Configuration (same certificate)
-    ssl_certificate /etc/letsencrypt/live/fluxoalfa.com.br/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/fluxoalfa.com.br/privkey.pem;
-    ssl_protocols TLSv1.2 TLSv1.3;
-
-    # Redirect to non-www
-    return 301 https://fluxoalfa.com.br$request_uri;
-}
-
 # API subdomain - api.fluxoalfa.com.br
 server {
     listen 443 ssl;
@@ -103,8 +88,8 @@ server {
     server_name api.fluxoalfa.com.br;
 
     # SSL Configuration
-    ssl_certificate /etc/letsencrypt/live/fluxoalfa.com.br/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/fluxoalfa.com.br/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/app.fluxoalfa.com.br/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/app.fluxoalfa.com.br/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384;
     ssl_prefer_server_ciphers off;
@@ -112,36 +97,10 @@ server {
     # HSTS
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 
-    # Dynamic CORS headers for API
-    set $cors_origin "";
-    if ($http_origin = "https://fluxoalfa.com.br") {
-        set $cors_origin "https://fluxoalfa.com.br";
-    }
-    if ($http_origin = "https://admin.fluxoalfa.com.br") {
-        set $cors_origin "https://admin.fluxoalfa.com.br";
-    }
-    if ($http_origin = "https://www.fluxoalfa.com.br") {
-        set $cors_origin "https://www.fluxoalfa.com.br";
-    }
+    # CORS headers now handled by backend Express.js cors middleware
 
-    add_header Access-Control-Allow-Origin $cors_origin always;
-    add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
-    add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization" always;
-    add_header Access-Control-Expose-Headers "Content-Length,Content-Range" always;
-    add_header Access-Control-Allow-Credentials "true" always;
-
-    # Handle preflight requests
+    # Main API location block
     location / {
-        if ($request_method = 'OPTIONS') {
-            add_header Access-Control-Allow-Origin $cors_origin always;
-            add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
-            add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization" always;
-            add_header Access-Control-Max-Age 1728000;
-            add_header Content-Type 'text/plain; charset=utf-8';
-            add_header Content-Length 0;
-            return 204;
-        }
-
         # Rate limiting for API
         limit_req zone=api burst=50 nodelay;
 
@@ -188,8 +147,8 @@ server {
     server_name admin.fluxoalfa.com.br;
 
     # SSL Configuration
-    ssl_certificate /etc/letsencrypt/live/fluxoalfa.com.br/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/fluxoalfa.com.br/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/app.fluxoalfa.com.br/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/app.fluxoalfa.com.br/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384;
     ssl_prefer_server_ciphers off;
