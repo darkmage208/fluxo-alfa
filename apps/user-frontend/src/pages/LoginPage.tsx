@@ -45,10 +45,10 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
       {/* Logo */}
-      <Link to="/" className="flex items-center space-x-2 mb-8 hover:opacity-80 transition-opacity">
+      <a href="https://fluxoalfa.com.br" className="flex items-center space-x-2 mb-8 hover:opacity-80 transition-opacity">
         <img src="/logo.png" alt="Fluxo Alfa Logo" className="w-8 h-8" />
         <img src="/fluxoalfa.png" alt="Fluxo Alfa" className="h-6 w-auto" />
-      </Link>
+      </a>
 
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
