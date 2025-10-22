@@ -38,7 +38,7 @@ fi
 # Remove existing certificates to force renewal
 echo "🗑️  Removing existing certificates to force renewal..."
 docker run --rm -v fluxo-certbot-data-prod:/etc/letsencrypt alpine:latest \
-    sh -c "rm -rf /etc/letsencrypt/live/$DOMAIN /etc/letsencrypt/archive/$DOMAIN /etc/letsencrypt/renewal/$DOMAIN.conf" 2>/dev/null || true
+    sh -c "rm -rf /etc/letsencrypt/live/app.$DOMAIN /etc/letsencrypt/archive/app.$DOMAIN /etc/letsencrypt/renewal/app.$DOMAIN.conf" 2>/dev/null || true
 
 # Get SSL certificate
 echo "🔐 Obtaining fresh SSL certificate from Let's Encrypt..."
@@ -72,9 +72,9 @@ if [ $? -eq 0 ]; then
     echo "✅ Test certificate successful! Getting real certificate..."
     # Remove test certificate
     docker run --rm -v fluxo-certbot-data-prod:/etc/letsencrypt alpine:latest \
-        sh -c "rm -rf /etc/letsencrypt/live/$DOMAIN /etc/letsencrypt/archive/$DOMAIN /etc/letsencrypt/renewal/$DOMAIN.conf" 2>/dev/null || true
+        sh -c "rm -rf /etc/letsencrypt/live/app.$DOMAIN /etc/letsencrypt/archive/app.$DOMAIN /etc/letsencrypt/renewal/app.$DOMAIN.conf" 2>/dev/null || true
 
-    # Get real certificate for all domains
+    # Get real certificate for all domains (expand existing if needed)
     docker run --rm \
         -v fluxo-certbot-data-prod:/etc/letsencrypt \
         -p 80:80 \
@@ -85,6 +85,7 @@ if [ $? -eq 0 ]; then
         --agree-tos \
         --no-eff-email \
         --non-interactive \
+        --expand \
         --verbose \
         -d app.$DOMAIN \
         -d api.$DOMAIN \
