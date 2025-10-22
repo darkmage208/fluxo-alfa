@@ -4,7 +4,7 @@ import { Message } from './Message';
 import { MessageInput } from './MessageInput';
 import StreamingMarkdownRenderer from '@/components/StreamingMarkdownRenderer';
 import TypingIndicator from '@/components/TypingIndicator';
-import type { ChatThread, Message as MessageType } from '@shared/types';
+import type { ChatThread, ChatMessage as MessageType } from '@shared/types';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { 
   MessageCircle, 
@@ -95,8 +95,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
   return (
     <div className="flex-1 flex flex-col relative">
-      {/* Mobile Header */}
-      <div className="sm:hidden p-4 border-b border-border bg-card">
+      {/* Mobile Header - Fixed at top */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 p-4 border-b border-border bg-card/95 backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <Button
             variant="ghost"
@@ -116,7 +116,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       {currentThread ? (
         <>
           {/* Messages */}
-          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6 pb-24 sm:pb-28 thin-scrollbar">
+          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto pt-20 md:pt-6 p-4 sm:p-6 pb-24 sm:pb-28 thin-scrollbar">
             <div className="w-full max-w-4xl mx-auto space-y-6" style={{ minWidth: '320px' }}>
               {/* Load more messages trigger */}
               {hasMoreMessages && (
@@ -180,8 +180,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             </div>
           </div>
 
-          {/* Message Input */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
+          {/* Message Input - Fixed at bottom */}
+          <div className="fixed bottom-0 left-0 right-0 z-40 p-4 sm:p-6 sm:absolute">
             <div className="w-full max-w-4xl mx-auto" style={{ minWidth: '320px' }}>
               <MessageInput
                 messageInput={messageInput}
@@ -193,7 +193,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           </div>
         </>
       ) : (
-        <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20">
+        <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 pt-20 md:pt-0">
           <div className="text-center max-w-md mx-auto p-8">
             <div className="w-20 h-20 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
               <Bot className="w-10 h-10 text-primary-foreground" />

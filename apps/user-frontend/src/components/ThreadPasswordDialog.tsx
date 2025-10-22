@@ -156,13 +156,6 @@ const ThreadPasswordDialog: React.FC<ThreadPasswordDialogProps> = ({
             </Button>
           </div>
 
-          {threadTitle && (
-            <div className="mb-6 p-3 bg-muted/50 rounded-lg border">
-              <p className="text-sm text-muted-foreground">
-                Thread: <span className="font-medium text-foreground">{threadTitle}</span>
-              </p>
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
