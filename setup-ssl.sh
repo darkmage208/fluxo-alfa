@@ -3,7 +3,7 @@ set -e
 
 # SSL Setup Script for Fluxo Alfa Production
 DOMAIN="fluxoalfa.com.br"
-EMAIL="admin@fluxoalfa.com.br"
+EMAIL="equipe@fluxoalfa.com.br"
 
 echo "🔒 Setting up SSL certificates for $DOMAIN (force renewal)"
 echo "⚠️  This will replace any existing certificates"
@@ -42,7 +42,7 @@ docker run --rm -v fluxo-certbot-data-prod:/etc/letsencrypt alpine:latest \
 
 # Get SSL certificate
 echo "🔐 Obtaining fresh SSL certificate from Let's Encrypt..."
-echo "📋 Requesting certificate for: $DOMAIN, www.$DOMAIN, api.$DOMAIN, admin.$DOMAIN"
+echo "📋 Requesting certificate for: app.$DOMAIN, api.$DOMAIN, admin.$DOMAIN"
 
 # Try standalone mode (more reliable for new certificates)
 echo "🔍 Using standalone mode for certificate generation..."
@@ -66,7 +66,7 @@ docker run --rm \
     --non-interactive \
     --verbose \
     --test-cert \
-    -d $DOMAIN
+    -d app.$DOMAIN
 
 if [ $? -eq 0 ]; then
     echo "✅ Test certificate successful! Getting real certificate..."
@@ -86,8 +86,7 @@ if [ $? -eq 0 ]; then
         --no-eff-email \
         --non-interactive \
         --verbose \
-        -d $DOMAIN \
-        -d www.$DOMAIN \
+        -d app.$DOMAIN \
         -d api.$DOMAIN \
         -d admin.$DOMAIN
 else
@@ -129,7 +128,7 @@ if [ $? -eq 0 ]; then
 
     # Test SSL connectivity
     echo "🧪 Testing SSL connectivity..."
-    if curl -s -f -k https://$DOMAIN/health > /dev/null; then
+    if curl -s -f -k https://app.$DOMAIN/health > /dev/null; then
         echo "✅ SSL health check passed"
     else
         echo "⚠️  SSL health check failed, but certificates are installed"
@@ -138,7 +137,7 @@ if [ $? -eq 0 ]; then
 
     echo ""
     echo "🎉 SSL setup complete! Fresh certificates installed."
-    echo "🌐 Main site: https://$DOMAIN"
+    echo "🌐 Main site: https://app.$DOMAIN"
     echo "🌐 API endpoint: https://api.$DOMAIN"
     echo "🌐 Admin panel: https://admin.$DOMAIN"
     echo "🔒 HTTP traffic is automatically redirected to HTTPS"

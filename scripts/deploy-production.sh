@@ -141,8 +141,7 @@ if [ ! -d "./docker/nginx/ssl" ]; then
         --email $EMAIL \
         --agree-tos \
         --no-eff-email \
-        -d $DOMAIN \
-        -d www.$DOMAIN \
+        -d app.$DOMAIN \
         -d admin.$DOMAIN \
         -d api.$DOMAIN
 
@@ -198,7 +197,7 @@ else
 fi
 
 echo "🌐 Your application should be available at:"
-echo "   • Main site: https://$DOMAIN"
+echo "   • Main site: https://app.$DOMAIN"
 echo "   • Admin panel: https://admin.$DOMAIN"
 echo "   • API: https://api.$DOMAIN"
 echo ""
@@ -215,8 +214,7 @@ echo ""
 # Show final instructions
 print_status "Post-deployment checklist:"
 echo "  1. ✅ Configure DNS A records:"
-echo "     - $DOMAIN → Your server IP"
-echo "     - www.$DOMAIN → Your server IP"
+echo "     - app.$DOMAIN → Your server IP"
 echo "     - admin.$DOMAIN → Your server IP"
 echo "     - api.$DOMAIN → Your server IP"
 echo ""

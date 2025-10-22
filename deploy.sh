@@ -5,10 +5,10 @@ set -e
 # Domain: fluxoalfa.com.br
 
 DOMAIN="fluxoalfa.com.br"
-EMAIL="admin@fluxoalfa.com.br"
+EMAIL="equipe@fluxoalfa.com.br"
 
 echo "🚀 Deploying Fluxo Alfa to production"
-echo "📋 Domain: $DOMAIN"
+echo "📋 Domain: app.$DOMAIN"
 
 # Check if .env exists
 if [ ! -f ".env" ]; then
@@ -69,7 +69,7 @@ upstream admin {
 # Main website - fluxoalfa.com.br (HTTP only)
 server {
     listen 80;
-    server_name fluxoalfa.com.br www.fluxoalfa.com.br;
+    server_name app.fluxoalfa.com.br;
 
     # Let's Encrypt challenge
     location /.well-known/acme-challenge/ {
@@ -111,13 +111,13 @@ server {
     listen 80;
     server_name api.fluxoalfa.com.br;
 
-    # Let's Encrypt challenge
+    # Let's Encrypt challengez
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
     }
 
     # CORS headers for API
-    add_header Access-Control-Allow-Origin "http://fluxoalfa.com.br, http://admin.fluxoalfa.com.br" always;
+    add_header Access-Control-Allow-Origin "http://app.fluxoalfa.com.br, http://admin.fluxoalfa.com.br" always;
     add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
     add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization" always;
     add_header Access-Control-Expose-Headers "Content-Length,Content-Range" always;
@@ -126,7 +126,7 @@ server {
     # Handle preflight requests
     location / {
         if ($request_method = 'OPTIONS') {
-            add_header Access-Control-Allow-Origin "http://fluxoalfa.com.br, http://admin.fluxoalfa.com.br" always;
+            add_header Access-Control-Allow-Origin "http://app.fluxoalfa.com.br, http://admin.fluxoalfa.com.br" always;
             add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
             add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization" always;
             add_header Access-Control-Max-Age 1728000;
@@ -248,12 +248,12 @@ if docker volume inspect fluxo-certbot-data-prod >/dev/null 2>&1 && \
    docker run --rm -v fluxo-certbot-data-prod:/etc/letsencrypt alpine:latest test -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" 2>/dev/null; then
     echo "📜 Existing SSL certificates found"
     echo "🔄 SSL certificates will be renewed/updated on next setup-ssl.sh run"
-    echo "🌐 Your site is running at: https://$DOMAIN"
+    echo "🌐 Your site is running at: https://app.$DOMAIN"
     echo "🌐 API endpoint: https://api.$DOMAIN"
     echo "🌐 Admin panel: https://admin.$DOMAIN"
 else
     echo "⚠️  No SSL certificates found"
-    echo "🌐 Your site is running at: http://$DOMAIN"
+    echo "🌐 Your site is running at: http://app.$DOMAIN"
     echo "🌐 API endpoint: http://api.$DOMAIN"
     echo "🌐 Admin panel: http://admin.$DOMAIN"
 fi
