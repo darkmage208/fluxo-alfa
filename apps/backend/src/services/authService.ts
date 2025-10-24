@@ -41,19 +41,57 @@ export class AuthService {
         },
       });
 
-      // Create default subscription
-      await prisma.subscription.create({
-        data: {
-          userId: user.id,
-          planId: 'free',
-          status: 'active',
-        },
+      // Check for pending payments
+      const pendingPayment = await (prisma as any).pendingUserPayment.findUnique({
+        where: { email: userData.email },
       });
+
+      let subscriptionData = {
+        userId: user.id,
+        planId: 'free',
+        status: 'active',
+      };
+
+      // If there's a pending payment, apply it
+      if (pendingPayment && !pendingPayment.isProcessed) {
+        await this.applyPendingPayment(user, pendingPayment);
+        
+        // Calculate new expiration date from registration moment based on payment amount
+        const newExpirationDate = this.calculateExpirationDateFromAmount(pendingPayment.amount);
+        
+        subscriptionData = {
+          userId: user.id,
+          planId: 'pro',
+          status: 'active',
+          paymentMethod: 'kiwify',
+          kiwifySubscriptionId: pendingPayment.gatewayData?.kiwifySubscriptionId,
+          kiwifyCustomerId: userData.email,
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: newExpirationDate,
+          cancelAtPeriodEnd: false,
+        } as any;
+      }
+
+      // Create subscription
+      await prisma.subscription.create({
+        data: subscriptionData,
+      });
+
+      // Mark pending payment as processed if it exists
+      if (pendingPayment && !pendingPayment.isProcessed) {
+        await (prisma as any).pendingUserPayment.update({
+          where: { id: pendingPayment.id },
+          data: {
+            isProcessed: true,
+            processedAt: new Date(),
+          },
+        });
+      }
 
       // Generate tokens
       const tokens = await this.generateTokens(user.id);
 
-      logger.info(`User registered: ${user.email}`);
+      logger.info(`User registered: ${user.email}${pendingPayment ? ' with pending payment applied' : ''}`);
 
       return {
         user: sanitizeUser(user),
@@ -334,5 +372,57 @@ export class AuthService {
     });
 
     return { accessToken, refreshToken };
+  }
+
+  /**
+   * Apply pending payment to newly registered user
+   */
+  private async applyPendingPayment(user: any, pendingPayment: any) {
+    try {
+      // Create payment record
+      await prisma.payment.create({
+        data: {
+          userId: user.id,
+          amount: pendingPayment.amount,
+          currency: pendingPayment.currency,
+          status: 'succeeded',
+          type: 'subscription',
+          paymentMethod: 'kiwify',
+          kiwifyTransactionId: pendingPayment.gatewayData?.kiwifyOrderId,
+          metadata: pendingPayment.gatewayData?.paymentMetadata,
+        },
+      });
+
+      logger.info(`Applied pending payment for user ${user.email} with amount ${pendingPayment.amount} BRL`);
+    } catch (error) {
+      logger.error('Error applying pending payment:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate expiration date from registration moment based on payment amount
+   * 197.00 BRL = 1 month from registration
+   * 67.90 BRL = 10 days from registration
+   */
+  private calculateExpirationDateFromAmount(amount: number): Date {
+    const now = new Date();
+    
+    if (amount === 197.00) {
+      // R$ 197.00 - 1 month from registration
+      const expirationDate = new Date(now);
+      expirationDate.setMonth(expirationDate.getMonth() + 1);
+      return expirationDate;
+    } else if (amount === 67.90) {
+      // R$ 67.90 - 10 days from registration
+      const expirationDate = new Date(now);
+      expirationDate.setDate(expirationDate.getDate() + 10);
+      return expirationDate;
+    } else {
+      // Default to 1 month for unknown amounts
+      const expirationDate = new Date(now);
+      expirationDate.setMonth(expirationDate.getMonth() + 1);
+      return expirationDate;
+    }
   }
 }

@@ -425,3 +425,24 @@ model SystemSettings {
   @@index([key, isActive])
   @@map("system_settings")
 }
+
+// Temporary storage for users who paid before registering
+model PendingUserPayment {
+  id             String   @id @default(uuid()) @db.Uuid
+  email          String   @unique
+  name           String?
+  amount         Decimal  @db.Decimal(10, 2) // Payment amount in BRL
+  currency       String   @default("BRL")
+  paymentMethod  String   @map("payment_method") // kiwify, stripe, etc.
+  gatewayData    Json?    @map("gateway_data") @db.Json // Store gateway-specific data
+  expirationDate DateTime @map("expiration_date") // When the payment expires
+  isProcessed    Boolean  @default(false) @map("is_processed") // Whether user has registered and payment was applied
+  processedAt    DateTime? @map("processed_at") // When the payment was processed
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([email])
+  @@index([isProcessed])
+  @@index([expirationDate])
+  @@map("pending_user_payments")
+}

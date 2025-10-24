@@ -121,7 +121,14 @@ export class UnifiedBillingService {
 
       const result = await paymentGateway.processWebhookEvent(event);
 
-      // Process the webhook result
+      // Handle Kiwify-specific logic for user existence and pending payments
+      // Only handle actual successful payments (not pending PIX/Boleto)
+      if (gateway === 'kiwify' && result.payment && result.payment.status === 'succeeded' && result.action === 'subscription_created') {
+        await this.handleKiwifyPayment(result.payment, result.subscription);
+        return { received: true };
+      }
+
+      // Process the webhook result for other gateways
       if (result.subscription) {
         await this.updateSubscriptionFromGateway(result.subscription, gateway);
       }
@@ -523,6 +530,141 @@ export class UnifiedBillingService {
     } catch (error) {
       logger.error('Error checking subscription expiration status:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Handle Kiwify payment with user existence check and pending payment storage
+   */
+  private async handleKiwifyPayment(payment: any, subscription: any) {
+    try {
+      const customerEmail = payment.customerId;
+      const amount = payment.amount;
+      const pricingTier = payment.metadata?.pricingTier;
+
+      // Check if user exists
+      const existingUser = await prisma.user.findUnique({
+        where: { email: customerEmail },
+        include: { subscription: true }
+      });
+
+      if (existingUser) {
+        // User exists - update their subscription
+        await this.updateExistingUserSubscription(existingUser, payment, subscription);
+        logger.info(`Updated existing user subscription for ${customerEmail}`);
+      } else {
+        // User doesn't exist - store pending payment
+        // Calculate expiration date for pending payment (will be recalculated on registration)
+        const amountInBRL = amount / 100; // Convert from centavos to BRL
+        const expirationDate = this.calculateExpirationDateFromAmount(amountInBRL);
+        await this.storePendingPayment(payment, subscription, expirationDate, pricingTier);
+        logger.info(`Stored pending payment for new user ${customerEmail}`);
+      }
+    } catch (error) {
+      logger.error('Error handling Kiwify payment:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update existing user's subscription
+   */
+  private async updateExistingUserSubscription(user: any, payment: any, subscription: any) {
+    try {
+      // Record the payment
+      await this.recordPayment(payment, 'kiwify');
+
+      // Calculate new expiration date from payment moment based on amount
+      const amountInBRL = payment.amount / 100; // Convert from centavos to BRL
+      const newExpirationDate = this.calculateExpirationDateFromAmount(amountInBRL);
+
+      // Update or create subscription
+      const subscriptionData = {
+        planId: 'pro',
+        status: 'active',
+        paymentMethod: 'kiwify',
+        kiwifySubscriptionId: subscription.id,
+        kiwifyCustomerId: payment.customerId,
+        currentPeriodStart: new Date(), // Start from payment moment
+        currentPeriodEnd: newExpirationDate, // Use calculated expiration
+        cancelAtPeriodEnd: false,
+      };
+
+      await prisma.subscription.upsert({
+        where: { userId: user.id },
+        update: subscriptionData,
+        create: {
+          userId: user.id,
+          ...subscriptionData,
+        },
+      });
+
+      logger.info(`Updated subscription for existing user ${user.email} until ${newExpirationDate}`);
+    } catch (error) {
+      logger.error('Error updating existing user subscription:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Store pending payment for user who hasn't registered yet
+   */
+  private async storePendingPayment(payment: any, subscription: any, expirationDate: Date, pricingTier: string) {
+    try {
+      const pendingPaymentData = {
+        email: payment.customerId,
+        name: payment.metadata?.customerName || null,
+        amount: payment.amount / 100, // Convert from centavos to BRL
+        currency: payment.currency,
+        paymentMethod: 'kiwify',
+        gatewayData: {
+          kiwifyOrderId: payment.metadata?.kiwifyOrderId,
+          kiwifySubscriptionId: subscription.id,
+          pricingTier,
+          paymentMetadata: payment.metadata,
+        },
+        expirationDate,
+      };
+
+      await (prisma as any).pendingUserPayment.upsert({
+        where: { email: payment.customerId },
+        update: {
+          ...pendingPaymentData,
+          updatedAt: new Date(),
+        },
+        create: pendingPaymentData,
+      });
+
+      logger.info(`Stored pending payment for ${payment.customerId} with expiration ${expirationDate}`);
+    } catch (error) {
+      logger.error('Error storing pending payment:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate expiration date from payment moment based on amount
+   * 197.00 BRL = 1 month from payment
+   * 67.90 BRL = 10 days from payment
+   */
+  private calculateExpirationDateFromAmount(amount: number): Date {
+    const now = new Date();
+    
+    if (amount === 197.00) {
+      // R$ 197.00 - 1 month from payment
+      const expirationDate = new Date(now);
+      expirationDate.setMonth(expirationDate.getMonth() + 1);
+      return expirationDate;
+    } else if (amount === 67.90) {
+      // R$ 67.90 - 10 days from payment
+      const expirationDate = new Date(now);
+      expirationDate.setDate(expirationDate.getDate() + 10);
+      return expirationDate;
+    } else {
+      // Default to 1 month for unknown amounts
+      const expirationDate = new Date(now);
+      expirationDate.setMonth(expirationDate.getMonth() + 1);
+      return expirationDate;
     }
   }
 }

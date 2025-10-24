@@ -404,11 +404,13 @@ export class KiwifyGateway extends PaymentGateway {
 
           // Extract subscription details if available
           const kiwifySubscription = eventData.Subscription;
-          const nextPaymentDate = kiwifySubscription?.next_payment ? new Date(kiwifySubscription.next_payment) : this.calculateSubscriptionEnd(new Date());
+          
+          // Calculate expiration date based on amount (from payment moment)
+          const expirationDate = this.calculateExpirationDate(chargeAmount);
 
           const payment: PaymentData = {
             id: orderId,
-            amount: chargeAmount, // Amount in centavos (500 = R$ 5.00, 3373 = R$ 33.73, 19700 = R$ 197.00)
+            amount: chargeAmount, // Amount in centavos (6790 = R$ 67.90, 19700 = R$ 197.00)
             currency: 'BRL',
             status: 'succeeded',
             type: this.getPaymentType(eventData),
@@ -425,6 +427,8 @@ export class KiwifyGateway extends PaymentGateway {
               cardType: eventData.card_type,
               cardLast4: eventData.card_last4digits,
               installments: eventData.installments,
+              expirationDate: expirationDate.toISOString(),
+              pricingTier: this.getPricingTier(chargeAmount),
             },
           };
 
@@ -433,8 +437,8 @@ export class KiwifyGateway extends PaymentGateway {
             status: 'active',
             customerId: customerEmail,
             planId: 'pro', // Kiwify payments are for Pro plan
-            currentPeriodStart: kiwifySubscription?.start_date ? new Date(kiwifySubscription.start_date) : new Date(),
-            currentPeriodEnd: nextPaymentDate,
+            currentPeriodStart: new Date(), // Start from payment moment
+            currentPeriodEnd: expirationDate, // Use calculated expiration date
             cancelAtPeriodEnd: false,
             metadata: {
               kiwifyOrderId: eventData.order_id,
@@ -449,6 +453,8 @@ export class KiwifyGateway extends PaymentGateway {
               customerState: eventData.Customer?.state,
               paymentMethod: eventData.payment_method,
               chargeAmount: chargeAmount,
+              expirationDate: expirationDate.toISOString(),
+              pricingTier: this.getPricingTier(chargeAmount),
               subscriptionPlan: kiwifySubscription?.plan?.name,
               subscriptionFrequency: kiwifySubscription?.plan?.frequency,
               nextPayment: kiwifySubscription?.next_payment,
@@ -652,5 +658,44 @@ export class KiwifyGateway extends PaymentGateway {
 
     // Default fallback
     return 'subscription';
+  }
+
+  /**
+   * Calculate expiration date based on payment amount
+   * 197.00 (19700 centavos) = 1 month
+   * 67.90 (6790 centavos) = 10 days
+   */
+  private calculateExpirationDate(amountInCentavos: number): Date {
+    const now = new Date();
+    
+    if (amountInCentavos === 19700) {
+      // R$ 197.00 - 1 month
+      const expirationDate = new Date(now);
+      expirationDate.setMonth(expirationDate.getMonth() + 1);
+      return expirationDate;
+    } else if (amountInCentavos === 6790) {
+      // R$ 67.90 - 10 days
+      const expirationDate = new Date(now);
+      expirationDate.setDate(expirationDate.getDate() + 10);
+      return expirationDate;
+    } else {
+      // Default to 1 month for unknown amounts
+      const expirationDate = new Date(now);
+      expirationDate.setMonth(expirationDate.getMonth() + 1);
+      return expirationDate;
+    }
+  }
+
+  /**
+   * Get pricing tier based on amount
+   */
+  private getPricingTier(amountInCentavos: number): string {
+    if (amountInCentavos === 19700) {
+      return 'premium'; // R$ 197.00 - 1 month
+    } else if (amountInCentavos === 6790) {
+      return 'trial'; // R$ 67.90 - 10 days
+    } else {
+      return 'unknown';
+    }
   }
 }
