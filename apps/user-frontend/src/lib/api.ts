@@ -214,6 +214,11 @@ export const billingApi = {
     const response = await api.get('/billing/gateways');
     return response.data.data;
   },
+
+  getPlanSettings: async () => {
+    const response = await api.get('/billing/plan-settings');
+    return response.data.data;
+  },
 };
 
 export default api;

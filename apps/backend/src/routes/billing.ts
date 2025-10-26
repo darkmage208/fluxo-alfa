@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { UnifiedBillingService } from '../services/UnifiedBillingService';
+import { SettingsService } from '../services/settingsService';
 import { authenticateToken } from '../middleware/auth';
 import {
   createSuccessResponse,
@@ -9,6 +10,7 @@ import {
 
 const router = Router();
 const billingService = new UnifiedBillingService();
+const settingsService = new SettingsService();
 
 // Enhanced schema for multi-gateway support
 const CreateCheckoutSessionSchema = z.object({
@@ -172,6 +174,39 @@ router.get('/gateways', (_req, res) => {
   ];
 
   res.json(createSuccessResponse(gateways, 'Payment gateways retrieved'));
+});
+
+// @route   GET /billing/plan-settings
+// @desc    Get plan settings (free message limit, etc.)
+// @access  Public
+router.get('/plan-settings', async (_req, res, next) => {
+  try {
+    const freeMessageLimit = await settingsService.getFreeMessageLimit();
+    
+    const planSettings = {
+      free: {
+        messageLimit: freeMessageLimit,
+        features: [
+          'Respostas com IA',
+          'Busca contextual RAG',
+          'Suporte básico'
+        ]
+      },
+      pro: {
+        messageLimit: null, // Unlimited
+        features: [
+          'Chats ilimitados',
+          'Suporte prioritário',
+          'Recursos avançados de IA',
+          'Capacidades RAG aprimoradas'
+        ]
+      }
+    };
+
+    res.json(createSuccessResponse(planSettings, 'Plan settings retrieved'));
+  } catch (error) {
+    next(error);
+  }
 });
 
 export default router;

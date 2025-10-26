@@ -1,18 +1,70 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Crown, Check } from 'lucide-react';
+import { billingApi } from '@/lib/api';
 
 interface PlanComparisonCardsProps {
   subscription: any;
   isPro: boolean;
 }
 
+interface PlanSettings {
+  free: {
+    messageLimit: number;
+    features: string[];
+  };
+  pro: {
+    messageLimit: number | null;
+    features: string[];
+  };
+}
+
 export const PlanComparisonCards: React.FC<PlanComparisonCardsProps> = ({
   subscription,
   isPro,
 }) => {
+  const [planSettings, setPlanSettings] = useState<PlanSettings | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadPlanSettings();
+  }, []);
+
+  const loadPlanSettings = async () => {
+    try {
+      const settings = await billingApi.getPlanSettings();
+      setPlanSettings(settings);
+    } catch (error) {
+      console.error('Failed to load plan settings:', error);
+      // Fallback to default values
+      setPlanSettings({
+        free: {
+          messageLimit: 5,
+          features: ['Respostas com IA', 'Busca contextual RAG', 'Suporte básico']
+        },
+        pro: {
+          messageLimit: null,
+          features: ['Chats ilimitados', 'Suporte prioritário', 'Recursos avançados de IA', 'Capacidades RAG aprimoradas']
+        }
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="animate-pulse">
+          <div className="h-32 bg-gray-200 rounded-lg"></div>
+          <div className="h-32 bg-gray-200 rounded-lg"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Free Plan */}
@@ -32,16 +84,14 @@ export const PlanComparisonCards: React.FC<PlanComparisonCardsProps> = ({
           <div className="space-y-3">
             <div className="flex items-center">
               <Check className="w-4 h-4 mr-2 text-green-500" />
-              <span>5 chats por dia</span>
+              <span>{planSettings?.free.messageLimit || 5} chats por dia</span>
             </div>
-            <div className="flex items-center">
-              <Check className="w-4 h-4 mr-2 text-green-500" />
-              <span>Respostas com IA</span>
-            </div>
-            <div className="flex items-center">
-              <Check className="w-4 h-4 mr-2 text-green-500" />
-              <span>Busca contextual RAG</span>
-            </div>
+            {planSettings?.free.features.map((feature, index) => (
+              <div key={index} className="flex items-center">
+                <Check className="w-4 h-4 mr-2 text-green-500" />
+                <span>{feature}</span>
+              </div>
+            ))}
             <div className="pt-4">
               <div className="text-2xl font-bold">Gratuito</div>
             </div>
@@ -67,22 +117,12 @@ export const PlanComparisonCards: React.FC<PlanComparisonCardsProps> = ({
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <div className="flex items-center">
-              <Check className="w-4 h-4 mr-2 text-green-500" />
-              <span>Chats ilimitados</span>
-            </div>
-            <div className="flex items-center">
-              <Check className="w-4 h-4 mr-2 text-green-500" />
-              <span>Suporte prioritário</span>
-            </div>
-            <div className="flex items-center">
-              <Check className="w-4 h-4 mr-2 text-green-500" />
-              <span>Recursos avançados de IA</span>
-            </div>
-            <div className="flex items-center">
-              <Check className="w-4 h-4 mr-2 text-green-500" />
-              <span>Capacidades RAG aprimoradas</span>
-            </div>
+            {planSettings?.pro.features.map((feature, index) => (
+              <div key={index} className="flex items-center">
+                <Check className="w-4 h-4 mr-2 text-green-500" />
+                <span>{feature}</span>
+              </div>
+            ))}
             <div className="pt-4">
               <div className="text-2xl font-bold text-foreground">
                 R$197

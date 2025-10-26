@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate } from '@/lib/utils';
 import { CreditCard, Crown } from 'lucide-react';
+import { billingApi } from '@/lib/api';
 
 interface CurrentPlanCardProps {
   subscription: any;
@@ -13,6 +14,17 @@ interface CurrentPlanCardProps {
   onCancelSubscription: () => void;
 }
 
+interface PlanSettings {
+  free: {
+    messageLimit: number;
+    features: string[];
+  };
+  pro: {
+    messageLimit: number | null;
+    features: string[];
+  };
+}
+
 export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
   subscription,
   isPro,
@@ -20,6 +32,34 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
   onManageBilling,
   onCancelSubscription,
 }) => {
+  const [planSettings, setPlanSettings] = useState<PlanSettings | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadPlanSettings();
+  }, []);
+
+  const loadPlanSettings = async () => {
+    try {
+      const settings = await billingApi.getPlanSettings();
+      setPlanSettings(settings);
+    } catch (error) {
+      console.error('Failed to load plan settings:', error);
+      // Fallback to default values
+      setPlanSettings({
+        free: {
+          messageLimit: 5,
+          features: ['Respostas com IA', 'Busca contextual RAG', 'Suporte básico']
+        },
+        pro: {
+          messageLimit: null,
+          features: ['Chats ilimitados', 'Suporte prioritário', 'Recursos avançados de IA', 'Capacidades RAG aprimoradas']
+        }
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
     <Card>
       <CardHeader>
@@ -55,7 +95,9 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
           <div className="flex items-center justify-between">
             <span className="font-medium">Limite Diário de Chats:</span>
             <span className="font-semibold">
-              {subscription?.plan?.dailyChatLimit || 'Ilimitado'}
+              {isLoading ? 'Carregando...' : 
+               isPro ? 'Ilimitado' : 
+               (planSettings?.free.messageLimit || 5)}
             </span>
           </div>
 
