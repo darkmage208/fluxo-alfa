@@ -204,6 +204,8 @@ export class KiwifyGateway extends PaymentGateway {
             const orderIdRenewal = eventData.order_id;
             const kiwifySubscription = eventData.Subscription;
 
+            const expirationDate = this.calculateExpirationDate(chargeAmountRenewal);
+
             const renewalPayment: PaymentData = {
               id: orderIdRenewal,
               amount: chargeAmountRenewal, // Amount in centavos (6023 = R$ 60.23)
@@ -234,7 +236,7 @@ export class KiwifyGateway extends PaymentGateway {
               customerId: customerEmailRenewal,
               planId: 'pro',
               currentPeriodStart: kiwifySubscription?.start_date ? new Date(kiwifySubscription.start_date) : new Date(),
-              currentPeriodEnd: kiwifySubscription?.next_payment ? new Date(kiwifySubscription.next_payment) : this.calculateSubscriptionEnd(new Date()),
+              currentPeriodEnd: expirationDate,
               cancelAtPeriodEnd: false,
               metadata: {
                 kiwifyOrderId: orderIdRenewal,
