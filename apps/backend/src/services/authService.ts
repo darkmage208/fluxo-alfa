@@ -42,11 +42,11 @@ export class AuthService {
       });
 
       // Check for pending payments
-      const pendingPayment = await (prisma as any).pendingUserPayment.findUnique({
+      const pendingPayment = await prisma.pendingUserPayment.findUnique({
         where: { email: userData.email },
       });
 
-      let subscriptionData = {
+      let subscriptionData: any = {
         userId: user.id,
         planId: 'free',
         status: 'active',
@@ -57,19 +57,19 @@ export class AuthService {
         await this.applyPendingPayment(user, pendingPayment);
         
         // Calculate new expiration date from registration moment based on payment amount
-        const newExpirationDate = this.calculateExpirationDateFromAmount(pendingPayment.amount);
+        const newExpirationDate = this.calculateExpirationDateFromAmount(Number(pendingPayment.amount));
         
         subscriptionData = {
           userId: user.id,
           planId: 'pro',
           status: 'active',
           paymentMethod: 'kiwify',
-          kiwifySubscriptionId: pendingPayment.gatewayData?.kiwifySubscriptionId,
+          kiwifySubscriptionId: (pendingPayment.gatewayData as any)?.kiwifySubscriptionId,
           kiwifyCustomerId: userData.email,
           currentPeriodStart: new Date(),
           currentPeriodEnd: newExpirationDate,
           cancelAtPeriodEnd: false,
-        } as any;
+        };
       }
 
       // Create subscription
@@ -79,7 +79,7 @@ export class AuthService {
 
       // Mark pending payment as processed if it exists
       if (pendingPayment && !pendingPayment.isProcessed) {
-        await (prisma as any).pendingUserPayment.update({
+        await prisma.pendingUserPayment.update({
           where: { id: pendingPayment.id },
           data: {
             isProcessed: true,
