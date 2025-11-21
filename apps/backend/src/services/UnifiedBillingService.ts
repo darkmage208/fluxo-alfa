@@ -645,7 +645,7 @@ export class UnifiedBillingService {
   /**
    * Calculate expiration date from payment moment based on amount
    * 197.00 BRL = 1 month from payment
-   * 67.90 BRL = 10 days from payment
+   * 45.00 BRL = 10 days from payment
    */
   private calculateExpirationDateFromAmount(amount: number): Date {
     const now = new Date();
@@ -655,8 +655,8 @@ export class UnifiedBillingService {
       const expirationDate = new Date(now);
       expirationDate.setMonth(expirationDate.getMonth() + 1);
       return expirationDate;
-    } else if (amount === 67.90) {
-      // R$ 67.90 - 10 days from payment
+    } else if (amount === 45.00) {
+      // R$ 45.00 - 10 days from payment
       const expirationDate = new Date(now);
       expirationDate.setDate(expirationDate.getDate() + 10);
       return expirationDate;

@@ -403,7 +403,7 @@ export class AuthService {
   /**
    * Calculate expiration date from registration moment based on payment amount
    * 197.00 BRL = 1 month from registration
-   * 67.90 BRL = 10 days from registration
+   * 45.00 BRL = 10 days from registration
    */
   private calculateExpirationDateFromAmount(amount: number): Date {
     const now = new Date();
@@ -413,8 +413,8 @@ export class AuthService {
       const expirationDate = new Date(now);
       expirationDate.setMonth(expirationDate.getMonth() + 1);
       return expirationDate;
-    } else if (amount === 67.90) {
-      // R$ 67.90 - 10 days from registration
+    } else if (amount === 45.00) {
+      // R$ 45.00 - 10 days from registration
       const expirationDate = new Date(now);
       expirationDate.setDate(expirationDate.getDate() + 10);
       return expirationDate;

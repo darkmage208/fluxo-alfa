@@ -414,7 +414,7 @@ export class KiwifyGateway extends PaymentGateway {
 
           const payment: PaymentData = {
             id: orderId,
-            amount: chargeAmount, // Amount in centavos (6790 = R$ 67.90, 19700 = R$ 197.00)
+            amount: chargeAmount, // Amount in centavos (4500 = R$ 45.00, 19700 = R$ 197.00)
             currency: 'BRL',
             status: 'succeeded',
             type: this.getPaymentType(eventData),
@@ -667,7 +667,7 @@ export class KiwifyGateway extends PaymentGateway {
   /**
    * Calculate expiration date based on payment amount
    * 197.00 (19700 centavos) = 1 month
-   * 67.90 (6790 centavos) = 10 days
+   * 45.00 (4500 centavos) = 10 days
    */
   private calculateExpirationDate(amountInCentavos: number): Date {
     const now = new Date();
@@ -677,8 +677,8 @@ export class KiwifyGateway extends PaymentGateway {
       const expirationDate = new Date(now);
       expirationDate.setMonth(expirationDate.getMonth() + 1);
       return expirationDate;
-    } else if (amountInCentavos === 6790) {
-      // R$ 67.90 - 10 days
+    } else if (amountInCentavos === 4500) {
+      // R$ 45.00 - 10 days
       const expirationDate = new Date(now);
       expirationDate.setDate(expirationDate.getDate() + 10);
       return expirationDate;
@@ -696,8 +696,8 @@ export class KiwifyGateway extends PaymentGateway {
   private getPricingTier(amountInCentavos: number): string {
     if (amountInCentavos === 19700) {
       return 'premium'; // R$ 197.00 - 1 month
-    } else if (amountInCentavos === 6790) {
-      return 'trial'; // R$ 67.90 - 10 days
+    } else if (amountInCentavos === 4500) {
+      return 'trial'; // R$ 45.00 - 10 days
     } else {
       return 'unknown';
     }
